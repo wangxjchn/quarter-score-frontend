@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>需求文档 - 季度评分管理平台</title>
+    <style>
+      :root {
+        --bg: #f7f9fc;
+        --panel: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --brand: #0f766e;
+        --line: #e5e7eb;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: linear-gradient(180deg, #edf7f5 0%, var(--bg) 55%);
+        color: var(--text);
+      }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 32px 18px 60px; }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 24px;
+        box-shadow: 0 8px 26px rgba(15, 118, 110, 0.08);
+      }
+      h1 { margin: 0 0 10px; font-size: 28px; }
+      h2 { margin-top: 28px; color: var(--brand); font-size: 20px; }
+      p { line-height: 1.7; margin: 8px 0; }
+      ul, ol { margin: 8px 0 8px 22px; line-height: 1.7; }
+      .meta { color: var(--muted); margin-bottom: 20px; }
+      .note { background: #f0fdfa; border-left: 4px solid var(--brand); padding: 10px 12px; border-radius: 8px; }
+      a { color: var(--brand); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <article class="card">
+        <h1>《需求文档》</h1>
+        <p class="meta">项目：Vue3 + Node.js 季度评分管理平台</p>
+        <p>本系统用于企业内部季度绩效评分，目标是建立公平、透明、可追溯、可复算的评分体系。</p>
+
+        <h2>1. 项目范围</h2>
+        <ul>
+          <li>工号登录与角色权限管理</li>
+          <li>评分关系配置（按人 / 按组）</li>
+          <li>评分录入与提交流程</li>
+          <li>多算法组合评分计算</li>
+          <li>小组评级与结余滚存</li>
+          <li>Excel 一键导出（含可复算公式）</li>
+        </ul>
+
+        <h2>2. 角色与权限</h2>
+        <ul>
+          <li>普通员工：按分配任务打分</li>
+          <li>小组领导：配置评分关系</li>
+          <li>管理员：全局配置、等级确认、导出、开关控制</li>
+        </ul>
+
+        <h2>3. 全局开关</h2>
+        <ul>
+          <li>ENABLE_TRIM：是否去除最高最低分</li>
+          <li>ENABLE_CALIBRATION_TYPE：松紧校准类型（TRUE=平均值，FALSE=Z-Score）</li>
+          <li>ENABLE_LEVEL_FIXED_COEFFICIENT：职级调整类型（TRUE=固定系数，FALSE=职级Z）</li>
+          <li>ENABLE_RATIO：是否启用小组比例评级</li>
+          <li>ENABLE_BALANCE：是否启用结余参与基数计算</li>
+        </ul>
+
+        <h2>4. 计算流程</h2>
+        <ol>
+          <li>收集原始分</li>
+          <li>可选去极值（打分人数大于等于 4 时去 1 高 1 低）</li>
+          <li>松紧校准（二选一）</li>
+          <li>职级调整（二选一）</li>
+          <li>小组评级与结余滚存</li>
+        </ol>
+
+        <h2>5. 算法组合</h2>
+        <ul>
+          <li>平均值松紧 + 固定系数</li>
+          <li>平均值松紧 + 职级Z</li>
+          <li>Z-Score 松紧 + 固定系数</li>
+          <li>Z-Score 松紧 + 职级Z</li>
+        </ul>
+
+        <h2>6. 导出需求</h2>
+        <p>导出 Excel 必须包含 4 个 Sheet：</p>
+        <ul>
+          <li>系统配置</li>
+          <li>结余表</li>
+          <li>原始分明细（长格式）</li>
+          <li>评分总表（全流程公式）</li>
+        </ul>
+        <p class="note">导出结果要与后台计算一致，切换开关后公式与结果同步变化。</p>
+
+        <h2>7. 技术与部署</h2>
+        <ul>
+          <li>前端：Vue3 + Vite + Element Plus</li>
+          <li>后端：Node.js + Express</li>
+          <li>导出：ExcelJS</li>
+          <li>数据库：SQLite / MySQL</li>
+          <li>部署：前端 Vercel，后端 Render</li>
+        </ul>
+
+        <p><a href="/">返回首页</a></p>
+      </article>
+    </main>
+  </body>
+</html>

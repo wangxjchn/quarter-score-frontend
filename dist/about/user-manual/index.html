@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>使用手册 - 季度评分管理平台</title>
+    <style>
+      :root{ --bg:#fffdf5; --card:#fff; --txt:#1f2937; --line:#f0e7cf; --brand:#b45309; --muted:#6b7280; }
+      *{ box-sizing:border-box; }
+      body{ margin:0; font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background:linear-gradient(180deg,#fff7ed 0%,#fffdf5 42%); color:var(--txt); }
+      .wrap{ max-width:980px; margin:0 auto; padding:32px 18px 60px; }
+      .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:0 10px 26px rgba(180,83,9,.08); }
+      h1{ margin:0 0 8px; font-size:28px; }
+      h2{ margin:24px 0 8px; font-size:20px; color:var(--brand); }
+      p,li{ line-height:1.75; }
+      .muted{ color:var(--muted); }
+      .warn{ background:#fffbeb; border-left:4px solid #f59e0b; padding:10px 12px; border-radius:8px; }
+      a{ color:var(--brand); text-decoration:none; }
+      a:hover{ text-decoration:underline; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <article class="card">
+        <h1>《使用手册》</h1>
+        <p class="muted">适用对象：员工、组长、管理员</p>
+
+        <h2>1. 登录与首页</h2>
+        <ol>
+          <li>输入工号登录系统。</li>
+          <li>系统根据角色展示对应菜单。</li>
+          <li>首页显示当前季度、评分进度和待办事项。</li>
+        </ol>
+
+        <h2>2. 员工操作（打分）</h2>
+        <ol>
+          <li>进入“我的评分任务”。</li>
+          <li>查看需要评分的人员列表。</li>
+          <li>录入分值并提交。</li>
+          <li>提交后不可修改，请确认无误后再提交。</li>
+        </ol>
+
+        <h2>3. 组长操作（关系配置）</h2>
+        <ol>
+          <li>进入“评分关系配置”。</li>
+          <li>按人或按组分配评分关系。</li>
+          <li>检查覆盖范围并保存。</li>
+          <li>保存后员工即可看到评分任务。</li>
+        </ol>
+
+        <h2>4. 管理员操作（全局）</h2>
+        <ol>
+          <li>配置季度开关：去极值、松紧校准、职级调整、比例评级、结余。</li>
+          <li>确认员工最终归属小组。</li>
+          <li>查看计算结果与小组评级结果。</li>
+          <li>导出 Excel 报表。</li>
+        </ol>
+
+        <h2>5. 导出说明</h2>
+        <ul>
+          <li>导出文件包含系统配置、结余表、原始分明细、评分总表。</li>
+          <li>评分总表含公式，可在 Excel 中复算。</li>
+          <li>切换开关后重新导出，结果会同步变化。</li>
+        </ul>
+
+        <h2>6. 常见问题</h2>
+        <ul>
+          <li>看不到评分任务：请联系组长检查评分关系配置。</li>
+          <li>结果变化异常：请确认管理员是否修改了算法开关。</li>
+          <li>导出打不开：请使用支持公式的办公软件（如 Excel）。</li>
+        </ul>
+
+        <p class="warn">季度结束后建议锁定季度，避免历史数据被覆盖。</p>
+        <p><a href="/">返回首页</a></p>
+      </article>
+    </main>
+  </body>
+</html>

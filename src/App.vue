@@ -2,6 +2,24 @@
   <div class="container">
     <h1>Quarter Score</h1>
 
+    <nav class="top-doc-nav" aria-label="文档入口导航">
+      <span class="top-doc-nav-title">文档入口：</span>
+      <a href="/about/requirements/index.html">需求文档</a>
+      <a href="/about/analysis/index.html">需求分析</a>
+      <a href="/about/user-manual/index.html">使用手册</a>
+      <a href="/about/dev-manual/index.html">开发手册</a>
+    </nav>
+
+    <div class="card docs-card">
+      <h2>项目文档</h2>
+      <div class="docs-links">
+        <a href="/about/requirements/index.html">需求文档</a>
+        <a href="/about/analysis/index.html">需求分析文档</a>
+        <a href="/about/user-manual/index.html">使用手册</a>
+        <a href="/about/dev-manual/index.html">开发手册</a>
+      </div>
+    </div>
+
     <!-- 表单：新增 / 编辑 -->
     <div class="card">
       <h2>{{ editingId ? "Edit Record" : "Add Record" }}</h2>
@@ -102,8 +120,44 @@ onMounted(fetchScores);
 body { font-family: sans-serif; background: #f4f4f4; margin: 0; }
 .container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
 h1 { color: #333; }
+.top-doc-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #cfe3ff;
+  border-radius: 8px;
+  background: #f3f8ff;
+}
+.top-doc-nav-title {
+  font-weight: 600;
+  color: #1e3a8a;
+}
+.top-doc-nav a {
+  color: #1d4ed8;
+  text-decoration: none;
+  padding: 0.2rem 0.35rem;
+  border-radius: 4px;
+}
+.top-doc-nav a:hover {
+  background: #dbeafe;
+}
 .card { background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
 .card h2 { margin-top: 0; }
+.docs-card { border: 1px solid #d9efe9; background: #f6fffc; }
+.docs-links { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.docs-links a {
+  display: inline-block;
+  padding: 0.45rem 0.8rem;
+  border-radius: 6px;
+  background: #0f766e;
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+}
+.docs-links a:hover { background: #115e59; }
 .form-row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
 .form-row input { padding: .4rem .6rem; border: 1px solid #ccc; border-radius: 4px; width: 120px; }
 .form-row input[placeholder="Name"] { width: 180px; }

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>开发手册 - 季度评分管理平台</title>
+    <style>
+      :root{ --bg:#f5f3ff; --card:#fff; --txt:#1f2937; --line:#e9d5ff; --brand:#6d28d9; --muted:#6b7280; }
+      *{ box-sizing:border-box; }
+      body{ margin:0; font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; background:linear-gradient(180deg,#ede9fe 0%,#f5f3ff 42%); color:var(--txt); }
+      .wrap{ max-width:1020px; margin:0 auto; padding:32px 18px 60px; }
+      .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:0 10px 30px rgba(109,40,217,.08); }
+      h1{ margin:0 0 8px; font-size:28px; }
+      h2{ margin:24px 0 8px; font-size:20px; color:var(--brand); }
+      p,li{ line-height:1.75; }
+      pre{ background:#faf5ff; border:1px solid #e9d5ff; border-radius:8px; padding:12px; overflow:auto; }
+      code{ font-family:Consolas,monospace; }
+      .muted{ color:var(--muted); }
+      a{ color:var(--brand); text-decoration:none; }
+      a:hover{ text-decoration:underline; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <article class="card">
+        <h1>《开发手册》</h1>
+        <p class="muted">适用对象：前后端开发、测试、实施</p>
+
+        <h2>1. 推荐架构</h2>
+        <ul>
+          <li>前端：Vue3 + Vite + Element Plus</li>
+          <li>后端：Node.js + Express（RESTful）</li>
+          <li>数据库：SQLite（开发）/ MySQL（生产）</li>
+          <li>导出：ExcelJS</li>
+        </ul>
+
+        <h2>2. 模块拆分</h2>
+        <ul>
+          <li>auth：工号登录、角色鉴权</li>
+          <li>relations：评分关系（按季度）</li>
+          <li>scores：原始评分录入与查询</li>
+          <li>calc-engine：计算引擎（5 开关）</li>
+          <li>rating：小组评级与结余滚存</li>
+          <li>export：Excel 导出（4 Sheet + 公式）</li>
+        </ul>
+
+        <h2>3. 关键配置</h2>
+        <pre><code>ENABLE_TRIM=true
+ENABLE_CALIBRATION_TYPE=true
+ENABLE_LEVEL_FIXED_COEFFICIENT=true
+ENABLE_RATIO=true
+ENABLE_BALANCE=true</code></pre>
+
+        <h2>4. 数据模型建议</h2>
+        <ul>
+          <li>users：工号、姓名、角色、职级、小组</li>
+          <li>quarters：季度状态、比例配置、开关配置</li>
+          <li>score_relations：评分人、被评分人、季度</li>
+          <li>raw_scores：评分明细（长表）</li>
+          <li>level_coefficients：职级系数（可配置）</li>
+          <li>group_balances：小组结余</li>
+          <li>score_results：各步骤计算结果快照</li>
+        </ul>
+
+        <h2>5. API 约定（示例）</h2>
+        <pre><code>GET    /api/config
+PUT    /api/config
+GET    /api/relations
+POST   /api/relations
+POST   /api/scores
+GET    /api/calc/result
+POST   /api/calc/run
+GET    /api/export/excel</code></pre>
+
+        <h2>6. 计算引擎实现建议</h2>
+        <ul>
+          <li>采用纯函数分层：trim -> calibration -> level-adjust -> group-rating</li>
+          <li>输入统一为评分明细与配置快照，输出标准中间结构</li>
+          <li>所有步骤保留日志字段，便于审计和排错</li>
+          <li>为 4 种算法组合建立固定回归测试样例</li>
+        </ul>
+
+        <h2>7. 联调与发布</h2>
+        <ul>
+          <li>前端读取 VITE_API_BASE 访问后端服务</li>
+          <li>Render 部署后端，Vercel 部署前端</li>
+          <li>发布前执行计算一致性校验：后端结果 vs Excel 结果</li>
+        </ul>
+
+        <p><a href="/">返回首页</a></p>
+      </article>
+    </main>
+  </body>
+</html>

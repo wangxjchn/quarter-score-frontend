@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>需求分析文档 - 季度评分管理平台</title>
+    <style>
+      :root { --bg:#f8fafc; --card:#fff; --txt:#111827; --muted:#6b7280; --brand:#1d4ed8; --line:#e5e7eb; }
+      *{ box-sizing:border-box; }
+      body{ margin:0; background:radial-gradient(circle at top right,#dbeafe 0%,#f8fafc 42%); font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif; color:var(--txt); }
+      .wrap{ max-width:980px; margin:0 auto; padding:32px 18px 60px; }
+      .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:24px; box-shadow:0 10px 30px rgba(29,78,216,.08); }
+      h1{ margin:0 0 8px; font-size:28px; }
+      h2{ margin:24px 0 8px; color:var(--brand); font-size:20px; }
+      p,li{ line-height:1.75; }
+      code{ background:#eff6ff; padding:2px 6px; border-radius:6px; }
+      .tip{ background:#f0f9ff; border-left:4px solid var(--brand); padding:10px 12px; border-radius:8px; }
+      a{ color:var(--brand); text-decoration:none; }
+      a:hover{ text-decoration:underline; }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <article class="card">
+        <h1>《需求分析文档》</h1>
+        <p>该文档用于说明业务目标、边界、风险点、数据流与验收标准，指导后续设计与开发实施。</p>
+
+        <h2>1. 核心问题分析</h2>
+        <ul>
+          <li>不同评分人尺度不一致，导致横向比较不公平。</li>
+          <li>不同职级天然分布差异，直接比较会产生偏差。</li>
+          <li>小组评级名额固定，需要引入结余滚存保证长期公平。</li>
+          <li>管理层需要可审计、可复算的过程与结果。</li>
+        </ul>
+
+        <h2>2. 方案要点</h2>
+        <ul>
+          <li>通过开关实现算法路径切换，避免硬编码单一逻辑。</li>
+          <li>评分过程拆解为可解释步骤：原始分、去极值、校准、职级调整、评级。</li>
+          <li>输出长格式明细表，解决 100x100 宽表性能与可维护问题。</li>
+          <li>Excel 公式和后端计算同源，确保结果一致。</li>
+        </ul>
+
+        <h2>3. 关键计算逻辑</h2>
+        <ul>
+          <li>松紧校准模式 A：<code>calibrated = raw * (80 / scorerAvg)</code></li>
+          <li>松紧校准模式 B：<code>z = (raw - mean) / std</code>，<code>calibrated = 70 + 12.5 * z</code></li>
+          <li>职级调整模式 A：<code>final = calibrated * levelCoefficient</code></li>
+          <li>职级调整模式 B：职级内 Z-Score 映射至 70-95 区间</li>
+        </ul>
+
+        <h2>4. 边界与异常</h2>
+        <ul>
+          <li>评分人数不足时，去极值逻辑自动跳过。</li>
+          <li>标准差为 0 时，Z-Score 分支需降级为常量映射。</li>
+          <li>缺失职级系数时，使用默认值并记录告警。</li>
+          <li>评级名额四舍五入后总数偏差，按最大余数法修正。</li>
+        </ul>
+
+        <h2>5. 数据一致性要求</h2>
+        <ul>
+          <li>季度锁定后，评分关系与评分结果不可随意覆盖。</li>
+          <li>导出时保存配置快照，确保事后追溯。</li>
+          <li>所有计算步骤保留中间结果字段，支持审计。</li>
+        </ul>
+
+        <h2>6. 验收标准</h2>
+        <ul>
+          <li>5 个开关均可配置并生效。</li>
+          <li>4 种算法组合均可成功计算并可导出。</li>
+          <li>同一数据集在前端、后端、Excel 三端结果一致。</li>
+          <li>长格式明细在大样本下可正常查询与导出。</li>
+        </ul>
+
+        <p class="tip">建议先交付 MVP：权限、关系、评分、计算、导出主流程，再扩展审计日志和高级报表。</p>
+        <p><a href="/">返回首页</a></p>
+      </article>
+    </main>
+  </body>
+</html>
