@@ -1,171 +1,307 @@
 <template>
-  <div class="container">
-    <h1>Quarter Score</h1>
+  <el-container class="app-shell">
+    <div class="app-shell__bg"></div>
 
-    <nav class="top-doc-nav" aria-label="文档入口导航">
-      <span class="top-doc-nav-title">文档入口：</span>
-      <a href="/about/requirements/index.html">需求文档</a>
-      <a href="/about/analysis/index.html">需求分析</a>
-      <a href="/about/user-manual/index.html">使用手册</a>
-      <a href="/about/dev-manual/index.html">开发手册</a>
-    </nav>
+    <el-header v-if="user" class="app-header">
+      <div class="header-chip">Quarter Score</div>
 
-    <div class="card docs-card">
-      <h2>项目文档</h2>
-      <div class="docs-links">
-        <a href="/about/requirements/index.html">需求文档</a>
-        <a href="/about/analysis/index.html">需求分析文档</a>
-        <a href="/about/user-manual/index.html">使用手册</a>
-        <a href="/about/dev-manual/index.html">开发手册</a>
+      <div class="header-main">
+        <div class="brand-block">
+          <div>
+            <h1 class="app-brand">季度评分系统</h1>
+            <p class="app-subtitle">企业内部季度评分与人员管理平台</p>
+          </div>
+        </div>
+
+        <div class="desktop-nav">
+          <router-link to="/" class="nav-link">首页</router-link>
+          <template v-if="user.role === 'admin'">
+            <router-link to="/admin/teams" class="nav-link">小组管理</router-link>
+            <router-link to="/admin/users" class="nav-link">员工管理</router-link>
+          </template>
+          <el-dropdown class="nav-link nav-link--dropdown">
+            <span class="el-dropdown-link">项目文档</span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item><a href="/about/requirements/index.html">需求文档</a></el-dropdown-item>
+                <el-dropdown-item><a href="/about/analysis/index.html">需求分析</a></el-dropdown-item>
+                <el-dropdown-item><a href="/about/user-manual/index.html">使用手册</a></el-dropdown-item>
+                <el-dropdown-item><a href="/about/dev-manual/index.html">开发手册</a></el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+
+        <div class="header-actions">
+          <div class="profile-pill">
+            <strong>{{ user.name }}</strong>
+            <span>{{ ROLE_LABELS[user.role] }}</span>
+          </div>
+          <el-button class="logout-btn" @click="handleLogout">退出登录</el-button>
+          <el-button class="mobile-menu-btn" @click="drawerVisible = true">菜单</el-button>
+        </div>
       </div>
-    </div>
+    </el-header>
 
-    <!-- 表单：新增 / 编辑 -->
-    <div class="card">
-      <h2>{{ editingId ? "Edit Record" : "Add Record" }}</h2>
-      <div class="form-row">
-        <input v-model="form.name" placeholder="Name" />
-        <input v-model.number="form.q1" type="number" placeholder="Q1" />
-        <input v-model.number="form.q2" type="number" placeholder="Q2" />
-        <input v-model.number="form.q3" type="number" placeholder="Q3" />
-        <input v-model.number="form.q4" type="number" placeholder="Q4" />
-        <button @click="submitForm">{{ editingId ? "Update" : "Add" }}</button>
-        <button v-if="editingId" @click="cancelEdit" class="secondary">Cancel</button>
+    <el-main class="app-main">
+      <div class="app-main__inner">
+        <router-view />
       </div>
-      <p v-if="error" class="error">{{ error }}</p>
-    </div>
+    </el-main>
 
-    <!-- 记录列表 -->
-    <div class="card">
-      <h2>Records</h2>
-      <p v-if="loading">Loading...</p>
-      <table v-else-if="scores.length">
-        <thead>
-          <tr>
-            <th>Name</th><th>Q1</th><th>Q2</th><th>Q3</th><th>Q4</th><th>Total</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="s in scores" :key="s.id">
-            <td>{{ s.name }}</td>
-            <td>{{ s.q1 }}</td>
-            <td>{{ s.q2 }}</td>
-            <td>{{ s.q3 }}</td>
-            <td>{{ s.q4 }}</td>
-            <td><strong>{{ s.total }}</strong></td>
-            <td>
-              <button @click="startEdit(s)">Edit</button>
-              <button @click="deleteScore(s.id)" class="danger">Delete</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-else>No records yet.</p>
-    </div>
-  </div>
+    <el-drawer v-model="drawerVisible" size="78%" direction="rtl" class="mobile-drawer" :with-header="false">
+      <div class="mobile-drawer__content" v-if="user">
+        <div class="mobile-profile">
+          <strong>{{ user.name }}</strong>
+          <span>{{ ROLE_LABELS[user.role] }}</span>
+        </div>
+
+        <router-link to="/" class="mobile-nav-link" @click="drawerVisible = false">首页</router-link>
+        <template v-if="user.role === 'admin'">
+          <router-link to="/admin/teams" class="mobile-nav-link" @click="drawerVisible = false">小组管理</router-link>
+          <router-link to="/admin/users" class="mobile-nav-link" @click="drawerVisible = false">员工管理</router-link>
+        </template>
+
+        <div class="mobile-docs">
+          <p>项目文档</p>
+          <a href="/about/requirements/index.html">需求文档</a>
+          <a href="/about/analysis/index.html">需求分析</a>
+          <a href="/about/user-manual/index.html">使用手册</a>
+          <a href="/about/dev-manual/index.html">开发手册</a>
+        </div>
+
+        <el-button class="mobile-logout" @click="handleLogout">退出登录</el-button>
+      </div>
+    </el-drawer>
+  </el-container>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { api } from './api';
+import { state, logout, setUser } from './store';
 
-const API = import.meta.env.VITE_API_BASE;
+const router = useRouter();
+const drawerVisible = ref(false);
+const user = computed(() => state.user);
+const ROLE_LABELS = { admin: '管理员', leader: '组长', employee: '员工' };
 
-const scores = ref([]);
-const loading = ref(false);
-const error = ref("");
-const editingId = ref(null);
-const form = reactive({ name: "", q1: 0, q2: 0, q3: 0, q4: 0 });
-
-async function fetchScores() {
-  loading.value = true;
-  const res = await fetch(`${API}/api/scores`);
-  scores.value = await res.json();
-  loading.value = false;
-}
-
-async function submitForm() {
-  error.value = "";
-  const body = JSON.stringify(form);
-  const url = editingId.value ? `${API}/api/scores/${editingId.value}` : `${API}/api/scores`;
-  const method = editingId.value ? "PUT" : "POST";
-  const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body });
-  if (!res.ok) {
-    const data = await res.json();
-    error.value = data.error;
-    return;
+onMounted(async () => {
+  if (!state.user?.employee_id) return;
+  try {
+    const { user: freshUser } = await api.get('/api/auth/me');
+    setUser(freshUser);
+  } catch {
+    logout();
+    router.push('/login');
   }
-  cancelEdit();
-  await fetchScores();
-}
+});
 
-function startEdit(s) {
-  editingId.value = s.id;
-  Object.assign(form, { name: s.name, q1: s.q1, q2: s.q2, q3: s.q3, q4: s.q4 });
+function handleLogout() {
+  drawerVisible.value = false;
+  logout();
+  router.push('/login');
 }
-
-function cancelEdit() {
-  editingId.value = null;
-  Object.assign(form, { name: "", q1: 0, q2: 0, q3: 0, q4: 0 });
-}
-
-async function deleteScore(id) {
-  await fetch(`${API}/api/scores/${id}`, { method: "DELETE" });
-  await fetchScores();
-}
-
-onMounted(fetchScores);
 </script>
 
 <style>
-body { font-family: sans-serif; background: #f4f4f4; margin: 0; }
-.container { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-h1 { color: #333; }
-.top-doc-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid #cfe3ff;
-  border-radius: 8px;
-  background: #f3f8ff;
+* { box-sizing: border-box; }
+:root {
+  --app-bg: #eff3f7;
+  --panel: rgba(255, 255, 255, 0.88);
+  --panel-strong: #ffffff;
+  --text: #14213d;
+  --muted: #60708a;
+  --accent: #0f766e;
+  --accent-soft: #d7f6ef;
+  --border: rgba(148, 163, 184, 0.22);
+  --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 }
-.top-doc-nav-title {
-  font-weight: 600;
-  color: #1e3a8a;
+html, body, #app { min-height: 100%; }
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: Georgia, "PingFang SC", "Microsoft YaHei", serif;
+  background: var(--app-bg);
 }
-.top-doc-nav a {
-  color: #1d4ed8;
-  text-decoration: none;
-  padding: 0.2rem 0.35rem;
-  border-radius: 4px;
+a { color: inherit; text-decoration: none; }
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34%),
+    radial-gradient(circle at top right, rgba(30, 64, 175, 0.1), transparent 28%),
+    linear-gradient(180deg, #f5fbff 0%, #eef3f8 100%);
 }
-.top-doc-nav a:hover {
-  background: #dbeafe;
+.app-shell__bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,.32), transparent 88%);
 }
-.card { background: white; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-.card h2 { margin-top: 0; }
-.docs-card { border: 1px solid #d9efe9; background: #f6fffc; }
-.docs-links { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-.docs-links a {
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: auto !important;
+  padding: 18px 24px 0;
+  background: transparent;
+}
+.header-chip {
   display: inline-block;
-  padding: 0.45rem 0.8rem;
-  border-radius: 6px;
-  background: #0f766e;
-  color: #fff;
-  text-decoration: none;
-  font-size: 14px;
+  margin-bottom: 10px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  background: rgba(255,255,255,0.72);
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
-.docs-links a:hover { background: #115e59; }
-.form-row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
-.form-row input { padding: .4rem .6rem; border: 1px solid #ccc; border-radius: 4px; width: 120px; }
-.form-row input[placeholder="Name"] { width: 180px; }
-button { padding: .4rem .9rem; border: none; border-radius: 4px; cursor: pointer; background: #4a90e2; color: white; }
-button.secondary { background: #888; }
-button.danger { background: #e24a4a; margin-left: .3rem; }
-table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid #eee; }
-th { background: #f8f8f8; }
-.error { color: #e24a4a; margin-top: .5rem; }
+.header-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
+}
+.brand-block { display: flex; align-items: center; min-width: 0; }
+.app-brand {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.05;
+  color: #10233c;
+}
+.app-subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.desktop-nav,
+.header-actions,
+.nav-link--dropdown,
+.profile-pill {
+  display: flex;
+  align-items: center;
+}
+.desktop-nav { gap: 8px; }
+.nav-link {
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: #4b5563;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all .18s ease;
+}
+.nav-link:hover,
+.nav-link.router-link-active {
+  background: #10233c;
+  color: #fff;
+}
+.header-actions { gap: 12px; }
+.profile-pill {
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(239, 243, 247, 0.9);
+  color: #334155;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.profile-pill strong { font-size: 14px; }
+.profile-pill span { font-size: 12px; color: var(--muted); }
+.logout-btn,
+.mobile-menu-btn,
+.mobile-logout {
+  border-radius: 14px !important;
+}
+.mobile-menu-btn { display: none !important; }
+.app-main {
+  padding: 18px 24px 28px !important;
+  background: transparent !important;
+}
+.app-main__inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.mobile-drawer__content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 18px;
+}
+.mobile-profile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #10233c, #0f766e);
+  color: #fff;
+}
+.mobile-nav-link {
+  display: block;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #1e293b;
+  font-weight: 600;
+}
+.mobile-docs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  background: #f8fafc;
+}
+.mobile-docs p {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.mobile-docs a {
+  padding: 8px 0;
+  color: #10233c;
+  font-weight: 600;
+}
+@media (max-width: 960px) {
+  .app-header { padding: 14px 14px 0; }
+  .header-chip { margin-bottom: 8px; }
+  .header-main {
+    align-items: flex-start;
+    flex-direction: column;
+    border-radius: 22px;
+  }
+  .desktop-nav,
+  .profile-pill,
+  .logout-btn {
+    display: none !important;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .mobile-menu-btn {
+    display: inline-flex !important;
+    background: #10233c;
+    color: #fff;
+    border: none;
+  }
+  .app-brand { font-size: 20px; }
+  .app-main { padding: 14px 14px 24px !important; }
+}
 </style>
