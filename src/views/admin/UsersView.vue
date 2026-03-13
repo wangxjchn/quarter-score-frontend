@@ -4,7 +4,7 @@
       <div>
         <p class="section-chip">Admin</p>
         <h2>员工管理</h2>
-        <p>统一维护工号、姓名、角色、职级和所属小组。该页面已适配手机端卡片浏览与桌面端表格操作。</p>
+        <p>统一维护工号、姓名、角色、职级和群组式小组关系。每位员工可加入多个小组。</p>
       </div>
       <div class="hero-actions">
         <div class="hero-badge hero-badge--light">
@@ -15,46 +15,36 @@
       </div>
     </section>
 
-    <el-card class="admin-card" shadow="never">
-      <div class="table-shell">
-        <el-table :data="users" v-loading="loading" border stripe>
-          <el-table-column prop="employee_id" label="工号" width="120" />
-          <el-table-column prop="name" label="姓名" width="120" />
-          <el-table-column prop="role" label="角色" width="100">
-            <template #default="{ row }">{{ ROLE_LABELS[row.role] }}</template>
-          </el-table-column>
-          <el-table-column prop="level" label="职级" width="100">
-            <template #default="{ row }">{{ LEVEL_LABELS[row.level] }}</template>
-          </el-table-column>
-          <el-table-column prop="team_name" label="所属小组" min-width="140" />
-          <el-table-column prop="created_at" label="创建时间" min-width="180" />
-          <el-table-column label="操作" width="160" align="center" fixed="right">
-            <template #default="{ row }">
-              <el-button size="small" @click="openEdit(row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-
-      <div class="mobile-list">
-        <article v-for="row in users" :key="row.id" class="mobile-item">
-          <div class="mobile-item__head">
-            <div>
-              <strong>{{ row.name }}</strong>
-              <span>{{ row.employee_id }}</span>
-            </div>
-            <em>{{ ROLE_LABELS[row.role] }}</em>
+    <div v-if="loading" class="loading-wrap">
+      <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+    </div>
+    <el-empty v-else-if="users.length === 0" description="暂无员工" />
+    <div v-else class="users-grid" @click="swipedId = null">
+      <article
+        v-for="u in users"
+        :key="u.id"
+        class="user-card"
+        :class="{ 'is-swiped': swipedId === u.id }"
+        @touchstart.passive="onTouchStart"
+        @touchend.passive="e => onTouchEnd(e, u.id)"
+      >
+        <div class="user-card__main">
+          <div class="user-avatar" :class="`avatar--${u.role}`">{{ u.name.charAt(0) }}</div>
+          <div class="user-info">
+            <strong class="user-name">{{ u.name }}</strong>
+            <span class="user-title">{{ u.title_name || ROLE_LABELS[u.role] }}</span>
           </div>
-          <p>职级：{{ LEVEL_LABELS[row.level] }}</p>
-          <p>小组：{{ row.team_name || '未分配' }}</p>
-          <div class="mobile-item__actions">
-            <el-button size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-          </div>
-        </article>
-      </div>
-    </el-card>
+        </div>
+        <div class="card-acts">
+          <button class="act-btn act-btn--edit" title="编辑" @click.stop="openEdit(u)">
+            <el-icon><Edit /></el-icon>
+          </button>
+          <button class="act-btn act-btn--del" title="删除" @click.stop="handleDelete(u)">
+            <el-icon><Delete /></el-icon>
+          </button>
+        </div>
+      </article>
+    </div>
 
     <el-dialog v-model="dlgVisible" :title="editingId ? '编辑员工' : '新增员工'" width="440px">
       <el-form :model="form" label-width="80px">
@@ -74,9 +64,14 @@
             <el-option v-for="(label, val) in LEVEL_LABELS" :key="val" :label="label" :value="val" />
           </el-select>
         </el-form-item>
-        <el-form-item label="小组">
-          <el-select v-model="form.team_id" clearable placeholder="（不指定）" style="width:100%">
+        <el-form-item label="小组（可多选）">
+          <el-select v-model="form.team_ids" multiple clearable collapse-tags collapse-tags-tooltip placeholder="可选择多个小组" style="width:100%">
             <el-option v-for="t in teams" :key="t.id" :label="t.name" :value="t.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="职称">
+          <el-select v-model="form.title_id" clearable placeholder="选择职称（可空）" style="width:100%">
+            <el-option v-for="jt in jobTitles" :key="jt.id" :label="jt.name" :value="jt.id" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -91,6 +86,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { Loading, Edit, Delete } from '@element-plus/icons-vue';
 import { api } from '../../api';
 
 const ROLE_LABELS  = { admin: '管理员', leader: '组长', employee: '员工' };
@@ -98,18 +94,29 @@ const LEVEL_LABELS = { junior: '助理',  mid: '中级',   senior: '高级'   };
 
 const users      = ref([]);
 const teams      = ref([]);
+const jobTitles  = ref([]);
 const loading    = ref(false);
 const saving     = ref(false);
 const dlgVisible = ref(false);
 const editingId  = ref(null);
-const form       = reactive({ employee_id: '', name: '', role: 'employee', level: 'mid', team_id: null });
+const form       = reactive({ employee_id: '', name: '', role: 'employee', level: 'mid', team_ids: [], title_id: null });
+
+let _tx0 = 0;
+const swipedId = ref(null);
+function onTouchStart(e) { _tx0 = e.touches[0].clientX; }
+function onTouchEnd(e, id) {
+  const dx = _tx0 - e.changedTouches[0].clientX;
+  if (dx > 40) swipedId.value = id;
+  else if (dx < -10) swipedId.value = null;
+}
 
 async function fetchAll() {
   loading.value = true;
   try {
-    [users.value, teams.value] = await Promise.all([
+    [users.value, teams.value, jobTitles.value] = await Promise.all([
       api.get('/api/users'),
       api.get('/api/teams'),
+      api.get('/api/job-titles'),
     ]);
   } catch { ElMessage.error('加载数据失败'); }
   finally { loading.value = false; }
@@ -117,7 +124,7 @@ async function fetchAll() {
 
 function openAdd() {
   editingId.value  = null;
-  Object.assign(form, { employee_id: '', name: '', role: 'employee', level: 'mid', team_id: null });
+  Object.assign(form, { employee_id: '', name: '', role: 'employee', level: 'mid', team_ids: [], title_id: null });
   dlgVisible.value = true;
 }
 
@@ -128,7 +135,8 @@ function openEdit(row) {
     name:        row.name,
     role:        row.role,
     level:       row.level,
-    team_id:     row.team_id || null,
+    team_ids:    Array.isArray(row.team_ids) ? [...row.team_ids] : [],
+    title_id:    row.title_id || null,
   });
   dlgVisible.value = true;
 }
@@ -170,27 +178,24 @@ onMounted(fetchAll);
 
 <style scoped>
 .page { padding: 8px 0 0; }
-.admin-page { display: flex; flex-direction: column; gap: 18px; }
-.admin-hero,
-.admin-card,
-.mobile-item {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 26px;
-  background: rgba(255,255,255,.8);
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.05);
-}
+  .admin-page { display: flex; flex-direction: column; gap: 18px; }
 .admin-hero {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
   display: flex;
   justify-content: space-between;
   gap: 18px;
   padding: 24px;
+  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(226, 244, 255, .9));
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
 }
 .section-chip {
   margin: 0 0 8px;
-  color: #0f766e;
-  font-size: 12px;
+  color: #1d4ed8;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .1em;
+  font-weight: 700;
 }
 .admin-hero h2 { margin: 0 0 8px; font-size: 32px; }
 .admin-hero p { margin: 0; max-width: 680px; color: #60708a; line-height: 1.75; }
@@ -203,57 +208,72 @@ onMounted(fetchAll);
 }
 .hero-badge {
   padding: 18px 20px;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #10233c, #0f766e);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1d4ed8, #06b6d4);
   color: #fff;
   text-align: right;
+  box-shadow: 0 12px 24px rgba(29, 78, 216, 0.25);
 }
-.hero-badge--light { background: linear-gradient(135deg, #6d28d9, #2563eb); }
+.hero-badge--light { background: linear-gradient(135deg, #fb923c, #facc15); }
 .hero-badge strong { display: block; font-size: 28px; }
 .hero-badge span { font-size: 13px; opacity: .86; }
-.hero-button { min-width: 132px; border-radius: 16px; }
-.admin-card { padding: 12px; }
-.table-shell { overflow-x: auto; }
-.mobile-list { display: none; }
-.mobile-item { padding: 18px; margin-top: 12px; }
-.mobile-item__head {
+.hero-button { min-width: 132px; border-radius: 10px; }
+.loading-wrap { text-align: center; padding: 48px 0; color: #94a3b8; }
+/* ── User card grid ── */
+.users-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+}
+.user-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  transition: box-shadow .2s;
+}
+.user-card__main {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: flex-start;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 16px;
+  transition: transform .22s ease;
 }
-.mobile-item__head div {
+.user-avatar {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+  color: #fff; font-size: 20px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.avatar--admin  { background: linear-gradient(135deg, #dc2626, #fb923c); }
+.avatar--leader { background: linear-gradient(135deg, #7c3aed, #06b6d4); }
+.user-name  { display: block; font-size: 15px; font-weight: 700; color: #1e293b; }
+.user-title { display: block; font-size: 12px; color: #64748b; margin-top: 2px; }
+.card-acts {
+  position: absolute;
+  right: 8px;
+  top: 8px;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  gap: 6px;
 }
-.mobile-item__head span,
-.mobile-item p { color: #60708a; }
-.mobile-item__head em {
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  font-style: normal;
-  font-size: 12px;
+.user-card:hover { box-shadow: 0 8px 24px rgba(29, 78, 216, 0.1); }
+.act-btn {
+  width: 30px; height: 30px; border: none; border-radius: 8px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: background .12s;
 }
-.mobile-item p { margin: 10px 0 0; }
-.mobile-item__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 14px;
-}
+.act-btn--edit { background: rgba(59,130,246,.12); color: #1d4ed8; }
+.act-btn--edit:hover { background: rgba(59,130,246,.22); }
+.act-btn--del  { background: rgba(239,68,68,.1); color: #dc2626; }
+.act-btn--del:hover { background: rgba(239,68,68,.2); }
 @media (max-width: 768px) {
-  .admin-hero {
-    flex-direction: column;
-    padding: 20px;
-  }
-  .hero-actions {
-    width: 100%;
-    align-items: stretch;
-  }
-  .table-shell { display: none; }
-  .mobile-list { display: block; }
+  .admin-hero  { flex-direction: column; padding: 20px; }
+  .hero-actions { width: 100%; align-items: stretch; }
+  .users-grid  { grid-template-columns: 1fr; }
 }
 </style>
