@@ -3,8 +3,6 @@
     <div class="app-shell__bg"></div>
 
     <el-header v-if="user" class="app-header">
-      <div class="header-chip">Quarter Score</div>
-
       <div class="header-main">
         <div class="brand-block">
           <div>
@@ -18,6 +16,7 @@
           <template v-if="user.role === 'admin'">
             <router-link to="/admin/teams" class="nav-link">小组管理</router-link>
             <router-link to="/admin/users" class="nav-link">员工管理</router-link>
+            <router-link to="/admin/job-titles" class="nav-link">职称管理</router-link>
           </template>
           <el-dropdown class="nav-link nav-link--dropdown">
             <span class="el-dropdown-link">项目文档</span>
@@ -60,6 +59,7 @@
         <template v-if="user.role === 'admin'">
           <router-link to="/admin/teams" class="mobile-nav-link" @click="drawerVisible = false">小组管理</router-link>
           <router-link to="/admin/users" class="mobile-nav-link" @click="drawerVisible = false">员工管理</router-link>
+          <router-link to="/admin/job-titles" class="mobile-nav-link" @click="drawerVisible = false">职称管理</router-link>
         </template>
 
         <div class="mobile-docs">
@@ -108,21 +108,23 @@ function handleLogout() {
 <style>
 * { box-sizing: border-box; }
 :root {
-  --app-bg: #eff3f7;
-  --panel: rgba(255, 255, 255, 0.88);
+  --app-bg: #f3f6fb;
+  --panel: #ffffff;
   --panel-strong: #ffffff;
-  --text: #14213d;
-  --muted: #60708a;
-  --accent: #0f766e;
-  --accent-soft: #d7f6ef;
-  --border: rgba(148, 163, 184, 0.22);
-  --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  --text: #0f172a;
+  --muted: #64748b;
+  --accent: #1d4ed8;
+  --accent-cyan: #06b6d4;
+  --accent-amber: #fb923c;
+  --accent-soft: #dbeafe;
+  --border: #e2e8f0;
+  --shadow: 0 14px 34px rgba(15, 23, 42, 0.08);
 }
 html, body, #app { min-height: 100%; }
 body {
   margin: 0;
   color: var(--text);
-  font-family: Georgia, "PingFang SC", "Microsoft YaHei", serif;
+  font-family: "Manrope", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
   background: var(--app-bg);
 }
 a { color: inherit; text-decoration: none; }
@@ -130,63 +132,46 @@ a { color: inherit; text-decoration: none; }
   position: relative;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 34%),
-    radial-gradient(circle at top right, rgba(30, 64, 175, 0.1), transparent 28%),
-    linear-gradient(180deg, #f5fbff 0%, #eef3f8 100%);
+    radial-gradient(circle at 8% 4%, rgba(29, 78, 216, 0.14), transparent 33%),
+    radial-gradient(circle at 86% 8%, rgba(6, 182, 212, 0.12), transparent 30%),
+    radial-gradient(circle at 76% 92%, rgba(251, 146, 60, 0.14), transparent 31%),
+    linear-gradient(180deg, #f9fbff 0%, #f3f6fb 100%);
 }
 .app-shell__bg {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-  background-size: 24px 24px;
-  mask-image: linear-gradient(180deg, rgba(0,0,0,.32), transparent 88%);
+  display: none;
 }
 .app-header {
   position: sticky;
   top: 0;
   z-index: 40;
   height: auto !important;
-  padding: 18px 24px 0;
-  background: transparent;
-}
-.header-chip {
-  display: inline-block;
-  margin-bottom: 10px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 118, 110, 0.2);
-  background: rgba(255,255,255,0.72);
-  color: var(--accent);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  padding: 0 24px;
+  background: rgba(249, 251, 255, 0.9);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
 }
 .header-main {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
-  border: 1px solid var(--border);
-  border-radius: 24px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(18px);
-  box-shadow: var(--shadow);
+  gap: 24px;
+  max-width: 1240px;
+  margin: 0 auto;
+  min-height: 64px;
 }
 .brand-block { display: flex; align-items: center; min-width: 0; }
 .app-brand {
   margin: 0;
-  font-size: 24px;
-  line-height: 1.05;
-  color: #10233c;
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--text);
+  letter-spacing: 0.01em;
+  font-weight: 800;
 }
 .app-subtitle {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 .desktop-nav,
 .header-actions,
@@ -195,36 +180,67 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   align-items: center;
 }
-.desktop-nav { gap: 8px; }
+.desktop-nav { gap: 20px; }
 .nav-link {
-  padding: 10px 14px;
-  border-radius: 999px;
-  color: #4b5563;
-  font-size: 14px;
+  padding: 0;
+  color: #475569;
+  font-size: 13px;
   font-weight: 600;
-  transition: all .18s ease;
+  line-height: 64px;
+  transition: color .18s ease;
 }
 .nav-link:hover,
 .nav-link.router-link-active {
-  background: #10233c;
-  color: #fff;
+  background: transparent;
+  color: var(--text);
 }
-.header-actions { gap: 12px; }
+.nav-link.router-link-active {
+  color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.nav-link--dropdown .el-dropdown-link {
+  display: inline-flex;
+  align-items: center;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 64px;
+  transition: color .18s ease;
+}
+.nav-link--dropdown .el-dropdown-link:hover {
+  color: var(--text);
+}
+.header-actions { gap: 16px; }
 .profile-pill {
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 16px;
-  background: rgba(239, 243, 247, 0.9);
+  gap: 3px;
+  padding: 6px 0 6px 10px;
   color: #334155;
+  border-left: 2px solid #bfdbfe;
   flex-direction: column;
   align-items: flex-start;
 }
-.profile-pill strong { font-size: 14px; }
-.profile-pill span { font-size: 12px; color: var(--muted); }
+.profile-pill strong { font-size: 13px; }
+.profile-pill span { font-size: 11px; color: var(--muted); }
 .logout-btn,
 .mobile-menu-btn,
 .mobile-logout {
-  border-radius: 14px !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+.logout-btn:hover,
+.mobile-menu-btn:hover,
+.mobile-logout:hover {
+  color: var(--accent) !important;
+  background: transparent !important;
+}
+.logout-btn,
+.mobile-menu-btn {
+  line-height: 64px !important;
 }
 .mobile-menu-btn { display: none !important; }
 .app-main {
@@ -245,25 +261,29 @@ a { color: inherit; text-decoration: none; }
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 16px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #10233c, #0f766e);
+  padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-cyan));
   color: #fff;
+  box-shadow: 0 10px 22px rgba(29, 78, 216, 0.24);
 }
 .mobile-nav-link {
   display: block;
-  padding: 14px 16px;
-  border-radius: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
   background: #f8fafc;
+  border: 1px solid var(--border);
   color: #1e293b;
   font-weight: 600;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
 }
 .mobile-docs {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 16px;
-  border-radius: 20px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
   background: #f8fafc;
 }
 .mobile-docs p {
@@ -279,12 +299,9 @@ a { color: inherit; text-decoration: none; }
   font-weight: 600;
 }
 @media (max-width: 960px) {
-  .app-header { padding: 14px 14px 0; }
-  .header-chip { margin-bottom: 8px; }
+  .app-header { padding: 0 14px; }
   .header-main {
-    align-items: flex-start;
-    flex-direction: column;
-    border-radius: 22px;
+    min-height: 54px;
   }
   .desktop-nav,
   .profile-pill,
@@ -292,16 +309,14 @@ a { color: inherit; text-decoration: none; }
     display: none !important;
   }
   .header-actions {
-    width: 100%;
     justify-content: flex-end;
   }
   .mobile-menu-btn {
     display: inline-flex !important;
-    background: #10233c;
-    color: #fff;
-    border: none;
+    align-items: center;
+    line-height: 54px !important;
   }
-  .app-brand { font-size: 20px; }
+  .app-brand { font-size: 18px; }
   .app-main { padding: 14px 14px 24px !important; }
 }
 </style>

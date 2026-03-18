@@ -14,8 +14,8 @@
           <span>当前角色</span>
         </div>
         <div class="hero-stat">
-          <strong>{{ user?.team_name || '未分配' }}</strong>
-          <span>所属小组</span>
+          <strong>{{ teamSummary }}</strong>
+          <span>所在小组</span>
         </div>
       </div>
     </section>
@@ -78,6 +78,12 @@ import { state } from '../store';
 const user = computed(() => state.user);
 const ROLE_MAP = { admin: '管理员', leader: '组长', employee: '员工' };
 const roleLabel = computed(() => ROLE_MAP[user.value?.role] || user.value?.role);
+const teamSummary = computed(() => {
+  const names = user.value?.team_names;
+  if (!Array.isArray(names) || names.length === 0) return '未加入小组';
+  if (names.length <= 2) return names.join(' / ');
+  return `${names[0]} 等 ${names.length} 个小组`;
+});
 </script>
 
 <style scoped>
@@ -87,25 +93,26 @@ const roleLabel = computed(() => ROLE_MAP[user.value?.role] || user.value?.role)
   display: grid;
   grid-template-columns: 1.4fr .8fr;
   gap: 18px;
-  padding: 28px;
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 28px;
-  background: linear-gradient(135deg, rgba(255,255,255,.84), rgba(216, 245, 240, .8));
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
+  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(230, 240, 255, .9));
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
 }
 .section-chip {
   margin: 0 0 8px;
-  color: #0f766e;
-  font-size: 12px;
+  color: #1d4ed8;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
+  font-weight: 700;
 }
-.hero-panel h2 { margin: 0; font-size: clamp(28px, 5vw, 42px); }
+.hero-panel h2 { margin: 0; font-size: clamp(26px, 4.2vw, 38px); }
 .hero-copy {
   max-width: 640px;
-  margin: 14px 0 0;
+  margin: 12px 0 0;
   color: #60708a;
-  line-height: 1.8;
+  line-height: 1.7;
 }
 .hero-side {
   display: grid;
@@ -115,17 +122,19 @@ const roleLabel = computed(() => ROLE_MAP[user.value?.role] || user.value?.role)
 .hero-stat,
 .metric-card,
 .surface-card {
-  border-radius: 24px;
+  border-radius: 16px;
 }
 .hero-stat {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 120px;
-  padding: 20px;
-  background: rgba(255,255,255,.72);
+  min-height: 112px;
+  padding: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #ffffff;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
 }
-.hero-stat strong { font-size: 22px; }
+.hero-stat strong { font-size: 20px; }
 .hero-stat span { margin-top: 6px; color: #60708a; }
 .metric-grid {
   display: grid;
@@ -133,25 +142,26 @@ const roleLabel = computed(() => ROLE_MAP[user.value?.role] || user.value?.role)
   gap: 16px;
 }
 .metric-card {
-  padding: 20px;
+  padding: 18px;
   color: #fff;
-  min-height: 170px;
+  min-height: 156px;
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.14);
 }
-.metric-card span { font-size: 13px; opacity: .82; }
-.metric-card strong { display: block; margin: 16px 0 12px; font-size: 28px; }
-.metric-card p { margin: 0; line-height: 1.75; }
-.metric-card--teal { background: linear-gradient(135deg, #0f766e, #14b8a6); }
-.metric-card--navy { background: linear-gradient(135deg, #10233c, #334155); }
-.metric-card--sand { background: linear-gradient(135deg, #b45309, #f59e0b); }
+.metric-card span { font-size: 12px; opacity: .84; }
+.metric-card strong { display: block; margin: 12px 0 10px; font-size: 24px; }
+.metric-card p { margin: 0; line-height: 1.65; font-size: 13px; }
+.metric-card--teal { background: linear-gradient(135deg, #1d4ed8, #06b6d4); }
+.metric-card--navy { background: linear-gradient(135deg, #334155, #1e293b); }
+.metric-card--sand { background: linear-gradient(135deg, #fb923c, #facc15); }
 .content-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
 .surface-card {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(255,255,255,.78);
-  backdrop-filter: blur(16px);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: #ffffff;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
 }
 .card-head {
   display: flex;
@@ -168,22 +178,26 @@ const roleLabel = computed(() => ROLE_MAP[user.value?.role] || user.value?.role)
 .quick-link {
   display: flex;
   align-items: center;
-  min-height: 74px;
-  padding: 18px;
-  border-radius: 18px;
+  min-height: 62px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
   background: #f8fafc;
   color: #10233c;
   font-weight: 600;
+  transition: all .18s ease;
 }
+.quick-link:hover { border-color: #1d4ed8; color: #1d4ed8; }
 .quick-link--primary {
-  background: linear-gradient(135deg, #10233c, #0f766e);
+  background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+  border-color: transparent;
   color: #fff;
 }
 .info-list {
   margin: 0;
   padding-left: 18px;
   color: #475569;
-  line-height: 1.9;
+  line-height: 1.8;
 }
 @media (max-width: 960px) {
   .hero-panel,

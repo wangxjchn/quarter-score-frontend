@@ -15,35 +15,36 @@
       </div>
     </section>
 
-    <el-card class="admin-card" shadow="never">
-      <div class="table-shell">
-        <el-table :data="teams" v-loading="loading" border stripe>
-          <el-table-column prop="name" label="小组名称" min-width="180" />
-          <el-table-column prop="member_count" label="成员数" width="100" align="center" />
-          <el-table-column prop="created_at" label="创建时间" min-width="180" />
-          <el-table-column label="操作" width="160" align="center" fixed="right">
-            <template #default="{ row }">
-              <el-button size="small" @click="openEdit(row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
-
-      <div class="mobile-list">
-        <article v-for="row in teams" :key="row.id" class="mobile-item">
-          <div class="mobile-item__head">
-            <strong>{{ row.name }}</strong>
-            <span>{{ row.member_count }} 人</span>
-          </div>
-          <p>创建时间：{{ row.created_at }}</p>
-          <div class="mobile-item__actions">
-            <el-button size="small" @click="openEdit(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
-          </div>
-        </article>
-      </div>
-    </el-card>
+    <div v-if="loading" class="loading-wrap">
+      <el-icon class="is-loading" :size="32"><Loading /></el-icon>
+    </div>
+    <el-empty v-else-if="teams.length === 0" description="暂无小组" />
+    <div v-else class="teams-grid" @click="swipedId = null">
+      <article
+        v-for="team in teams"
+        :key="team.id"
+        class="team-card"
+        :class="{ 'is-swiped': swipedId === team.id }"
+        @touchstart.passive="onTouchStart"
+        @touchend.passive="e => onTouchEnd(e, team.id)"
+      >
+        <div class="team-card__main">
+          <h3 class="team-card__name">{{ team.name }}</h3>
+          <span class="team-card__count">{{ team.member_count }} 人</span>
+        </div>
+        <div class="card-acts">
+          <button class="act-btn act-btn--view" title="查看成员" @click.stop="goMembers(team)">
+            <el-icon><UserFilled /></el-icon>
+          </button>
+          <button class="act-btn act-btn--edit" title="编辑" @click.stop="openEdit(team)">
+            <el-icon><Edit /></el-icon>
+          </button>
+          <button class="act-btn act-btn--del" title="删除" @click.stop="handleDelete(team)">
+            <el-icon><Delete /></el-icon>
+          </button>
+        </div>
+      </article>
+    </div>
 
     <el-dialog v-model="dlgVisible" :title="editingId ? '编辑小组' : '新增小组'" width="360px">
       <el-form :model="form" label-position="top">
@@ -61,15 +62,31 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { Loading, Edit, Delete, UserFilled } from '@element-plus/icons-vue';
 import { api } from '../../api';
 
+const router     = useRouter();
 const teams      = ref([]);
 const loading    = ref(false);
 const saving     = ref(false);
 const dlgVisible = ref(false);
 const editingId  = ref(null);
 const form       = reactive({ name: '' });
+
+let _tx0 = 0;
+const swipedId = ref(null);
+function onTouchStart(e) { _tx0 = e.touches[0].clientX; }
+function onTouchEnd(e, id) {
+  const dx = _tx0 - e.changedTouches[0].clientX;
+  if (dx > 40) swipedId.value = id;
+  else if (dx < -10) swipedId.value = null;
+}
+
+function goMembers(team) {
+  router.push(`/admin/teams/${team.id}/members`);
+}
 
 async function fetchTeams() {
   loading.value = true;
@@ -79,8 +96,8 @@ async function fetchTeams() {
 }
 
 function openAdd() {
-  editingId.value = null;
-  form.name       = '';
+  editingId.value  = null;
+  form.name        = '';
   dlgVisible.value = true;
 }
 
@@ -127,15 +144,11 @@ onMounted(fetchTeams);
 <style scoped>
 .page { padding: 8px 0 0; }
 .admin-page { display: flex; flex-direction: column; gap: 18px; }
-.admin-hero,
-.admin-card,
-.mobile-item {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 26px;
-  background: rgba(255,255,255,.8);
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.05);
-}
 .admin-hero {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(230, 240, 255, .88));
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
   display: flex;
   justify-content: space-between;
   gap: 18px;
@@ -143,53 +156,81 @@ onMounted(fetchTeams);
 }
 .section-chip {
   margin: 0 0 8px;
-  color: #0f766e;
-  font-size: 12px;
+  color: #1d4ed8;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .1em;
+  font-weight: 700;
 }
 .admin-hero h2 { margin: 0 0 8px; font-size: 32px; }
-.admin-hero p { margin: 0; max-width: 680px; color: #60708a; line-height: 1.75; }
-.hero-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  align-items: flex-end;
-  min-width: 180px;
-}
+.admin-hero p  { margin: 0; max-width: 680px; color: #60708a; line-height: 1.75; }
+.hero-actions  { display: flex; flex-direction: column; gap: 12px; align-items: flex-end; min-width: 180px; }
 .hero-badge {
   padding: 18px 20px;
-  border-radius: 22px;
-  background: linear-gradient(135deg, #10233c, #0f766e);
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1d4ed8, #06b6d4);
   color: #fff;
   text-align: right;
+  box-shadow: 0 12px 24px rgba(29, 78, 216, 0.25);
 }
 .hero-badge strong { display: block; font-size: 28px; }
-.hero-badge span { font-size: 13px; opacity: .86; }
-.hero-button { min-width: 132px; border-radius: 16px; }
-.admin-card { padding: 12px; }
-.table-shell { overflow-x: auto; }
-.mobile-list { display: none; }
-.mobile-item { padding: 18px; margin-top: 12px; }
-.mobile-item__head,
-.mobile-item__actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.hero-badge span   { font-size: 13px; opacity: .86; }
+.hero-button       { min-width: 132px; border-radius: 10px; }
+.loading-wrap      { text-align: center; padding: 48px 0; color: #94a3b8; }
+
+/* ── Card grid ── */
+.teams-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
 }
-.mobile-item__head span,
-.mobile-item p { color: #60708a; }
-.mobile-item p { margin: 12px 0; }
+.team-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  transition: box-shadow .2s;
+}
+.team-card__main {
+  padding: 20px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform .22s ease;
+}
+.team-card__name  { margin: 0; font-size: 18px; font-weight: 700; color: #1e293b; }
+.team-card__count { font-size: 13px; color: #64748b; }
+.card-acts {
+  position: absolute; right: 0; top: 0; bottom: 0;
+  display: flex; flex-direction: column; justify-content: center; gap: 6px;
+  padding: 8px;
+  background: linear-gradient(90deg, transparent, rgba(248,251,255,.96) 30%);
+}
+@media (hover: hover) {
+  .card-acts { opacity: 0; transition: opacity .18s; }
+  .team-card:hover .card-acts { opacity: 1; }
+  .team-card:hover { box-shadow: 0 8px 28px rgba(29, 78, 216, 0.12); }
+}
+@media (hover: none) {
+  .team-card.is-swiped .team-card__main { transform: translateX(-90px); }
+}
+.act-btn {
+  width: 34px; height: 34px; border: none; border-radius: 10px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 16px; transition: background .12s;
+}
+.act-btn--view { background: rgba(6,182,212,.12); color: #0891b2; }
+.act-btn--view:hover { background: rgba(6,182,212,.22); }
+.act-btn--edit { background: rgba(59,130,246,.12); color: #1d4ed8; }
+.act-btn--edit:hover { background: rgba(59,130,246,.22); }
+.act-btn--del  { background: rgba(239,68,68,.1); color: #dc2626; }
+.act-btn--del:hover { background: rgba(239,68,68,.2); }
+
 @media (max-width: 768px) {
-  .admin-hero {
-    flex-direction: column;
-    padding: 20px;
-  }
-  .hero-actions {
-    width: 100%;
-    align-items: stretch;
-  }
-  .table-shell { display: none; }
-  .mobile-list { display: block; }
+  .admin-hero  { flex-direction: column; padding: 20px; }
+  .hero-actions { width: 100%; align-items: stretch; }
+  .teams-grid  { grid-template-columns: 1fr; }
 }
 </style>
