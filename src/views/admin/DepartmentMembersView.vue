@@ -1,33 +1,23 @@
-﻿<template>
+<template>
   <div class="page admin-page">
     <section class="admin-hero">
       <div>
         <p class="section-chip">Admin</p>
-        <h2>{{ teamName || '群组成员' }}</h2>
-        <p class="hero-desc">共 {{ members.length }} 名成员</p>
+        <h2>{{ department?.name || '职能成员' }}</h2>
+        <p v-if="department" class="hero-desc">共 {{ members.length }} 名员工</p>
       </div>
-      <div class="hero-actions">
-        <div class="action-buttons">
-          <el-button type="primary" class="hero-button" @click="openAddMember">
-            <el-icon style="margin-right:4px"><Plus /></el-icon>添加成员
-          </el-button>
-          <el-button class="hero-button" @click="$router.back()">返回</el-button>
-        </div>
-      </div>
+      <el-button class="hero-button" @click="goBack">返回</el-button>
     </section>
 
     <div v-if="loading" class="loading-wrap">
       <el-icon class="is-loading" :size="32"><Loading /></el-icon>
     </div>
-    <el-empty v-else-if="members.length === 0 && !loading" description="该群组暂无成员" />
-    <div v-else class="members-grid" @click="swipedId = null">
+    <el-empty v-else-if="(!department || members.length === 0) && !loading" description="该职能下暂无员工" />
+    <div v-else class="members-grid">
       <article
         v-for="m in members"
         :key="m.id"
         class="member-card"
-        :class="{ 'is-swiped': swipedId === m.id }"
-        @touchstart.passive="e => onTouchStart(e)"
-        @touchend.passive="e => onTouchEnd(e, m.id)"
       >
         <div class="member-card__main">
           <div class="member-card__avatar" :style="getAvatarStyle(m.name)">{{ m.name.charAt(0) }}</div>
@@ -40,36 +30,9 @@
           <button class="act-btn act-btn--edit" title="编辑" @click.stop="openEditMember(m)">
             <el-icon><Edit /></el-icon>
           </button>
-          <button class="act-btn act-btn--del" title="移出群组" @click.stop="removeMember(m)">
-            <el-icon><Delete /></el-icon>
-          </button>
         </div>
       </article>
     </div>
-
-    <el-dialog v-model="addDlgVisible" title="添加成员" class="admin-dialog">
-      <el-form label-position="top">
-        <el-form-item label="选择员工">
-          <el-select
-            v-model="selectedUserId"
-            placeholder="搜索员工姓名或工号"
-            filterable
-            style="width:100%"
-          >
-            <el-option
-              v-for="u in availableUsers"
-              :key="u.id"
-              :label="`${u.name}（${u.employee_id}）`"
-              :value="u.id"
-            />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="addDlgVisible = false">取消</el-button>
-        <el-button type="primary" :loading="addSaving" @click="confirmAdd">确认添加</el-button>
-      </template>
-    </el-dialog>
 
     <el-dialog v-model="editDlgVisible" :title="'编辑员工信息'" class="admin-dialog">
       <el-form :model="editForm" label-width="80px">
@@ -104,55 +67,46 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, reactive, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Loading, Plus, Delete, Edit } from '@element-plus/icons-vue';
+import { Loading, Edit } from '@element-plus/icons-vue';
 import { api } from '../../api';
 
-const route          = useRoute();
-const team           = ref(null);
-const teamName       = ref('');
-const members        = ref([]);
-const allUsers       = ref([]);
-const jobTitles      = ref([]);
-const departments    = ref([]); // 职能列表
-const loading        = ref(true); // 初始为 true，等待数据加载
-const addDlgVisible  = ref(false);
-const addSaving      = ref(false);
+const route = useRoute();
+const router = useRouter();
+const department = ref(null);
+const members = ref([]);
+const jobTitles = ref([]);
+const departments = ref([]); // 职能部门列表
+const loading = ref(true); // 初始为 true，等待数据加载
 const editDlgVisible = ref(false);
-const editSaving     = ref(false);
-const selectedUserId = ref(null);
-const editingMember  = ref(null);
-const editForm       = reactive({ employee_id: '', name: '', role: 'employee', department_id: null, title_id: null });
+const editSaving = ref(false);
+const editingMember = ref(null);
+const editForm = reactive({ employee_id: '', name: '', role: 'employee', department_id: null, title_id: null });
 
 const ROLE_LABELS = { admin: '管理员', leader: '组长', employee: '员工' };
 const LEVEL_LABELS = { junior: '助理', mid: '中级', senior: '高级' };
 
-let _tx0 = 0;
-const swipedId = ref(null);
-function onTouchStart(e) { _tx0 = e.touches[0].clientX; }
-function onTouchEnd(e, id) {
-  const dx = _tx0 - e.changedTouches[0].clientX;
-  if (dx > 40) swipedId.value = id;
-  else if (dx < -10) swipedId.value = null;
+async function fetchMembers() {
+  loading.value = true;
+  try {
+    const [deptData, jobTitlesData, departmentsData] = await Promise.all([
+      api.get(`/api/departments/${route.params.id}`),
+      api.get('/api/job-titles'),
+      api.get('/api/departments'), // 加载所有职能部门列表
+    ]);
+    department.value = deptData;
+    members.value = deptData.members || [];
+    jobTitles.value = jobTitlesData;
+    departments.value = departmentsData;
+  } catch (e) {
+    console.error('加载成员失败:', e);
+    ElMessage.error('加载数据失败，请刷新页面重试');
+  } finally {
+    loading.value = false;
+  }
 }
-
-function getAvatarStyle(name) {
-  const colors = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  ];
-  const index = name.charCodeAt(0) % colors.length;
-  return { background: colors[index] };
-}
-
-const availableUsers = computed(() =>
-  allUsers.value.filter(u => !members.value.some(m => m.id === u.id))
-);
 
 function openEditMember(member) {
   // 打开编辑对话框
@@ -193,8 +147,10 @@ async function handleEditSave() {
     if (idx !== -1) {
       members.value[idx] = { ...members.value[idx], ...editForm };
     }
-    // 注意：不要重新加载群组列表，因为修改职能不影响群组成员关系
-    // 员工仍然在这个群组中（user_teams 表记录未变）
+    // 如果修改了职能，需要重新加载整个列表
+    if (editForm.department_id !== editingMember.value.department_id) {
+      await fetchMembers();
+    }
   } catch (e) {
     ElMessage.error(e?.error || '操作失败');
   } finally {
@@ -202,63 +158,23 @@ async function handleEditSave() {
   }
 }
 
-async function fetchData() {
-  const id = route.params.id;
-  try {
-    loading.value = true;
-    const [allTeams, memberData, userData, jobTitlesData, departmentsData] = await Promise.all([
-      api.get('/api/teams'),
-      api.get(`/api/teams/${id}/members`),
-      api.get('/api/users'),
-      api.get('/api/job-titles'),
-      api.get('/api/departments'),
-    ]);
-    team            = allTeams.find(t => String(t.id) === String(id)) || null;
-    teamName.value  = team?.name || '';
-    members.value   = memberData;
-    allUsers.value  = userData;
-    jobTitles.value = jobTitlesData;
-    departments.value = departmentsData;
-  } catch (err) {
-    console.error('加载失败:', err);
-    ElMessage.error('加载数据失败，请刷新页面重试');
-  } finally {
-    loading.value = false;
-  }
+function getAvatarStyle(name) {
+  const colors = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  ];
+  const index = name.charCodeAt(0) % colors.length;
+  return { background: colors[index] };
 }
 
-function openAddMember() {
-  selectedUserId.value = null;
-  addDlgVisible.value  = true;
+function goBack() {
+  router.push('/admin/departments');
 }
 
-async function confirmAdd() {
-  if (!selectedUserId.value) { ElMessage.warning('请选择员工'); return; }
-  addSaving.value = true;
-  try {
-    await api.post(`/api/teams/${route.params.id}/members`, { user_id: selectedUserId.value });
-    ElMessage.success('添加成功');
-    addDlgVisible.value = false;
-    members.value = await api.get(`/api/teams/${route.params.id}/members`);
-  } catch (e) {
-    ElMessage.error(e?.error || '添加失败');
-  } finally {
-    addSaving.value = false;
-  }
-}
-
-async function removeMember(m) {
-  await ElMessageBox.confirm(`确认将「${m.name}」移出本小组？`, '提示', { type: 'warning' });
-  try {
-    await api.delete(`/api/teams/${route.params.id}/members/${m.id}`);
-    ElMessage.success('已移出');
-    members.value = members.value.filter(x => x.id !== m.id);
-  } catch (e) {
-    ElMessage.error(e?.error || '操作失败');
-  }
-}
-
-onMounted(fetchData);
+onMounted(fetchMembers);
 </script>
 
 <style scoped>
@@ -285,10 +201,10 @@ onMounted(fetchData);
 }
 .admin-hero h2 { margin: 0 0 8px; font-size: 32px; }
 .hero-desc { margin: 0; max-width: 680px; color: #60708a; line-height: 1.75; }
-.hero-actions  { display: flex; align-items: center; min-width: 280px; }
-.action-buttons { display: flex; gap: 12px; }
-.hero-button { min-width: 120px; border-radius: 10px; }
+.hero-button { min-width: 132px; border-radius: 10px; }
 .loading-wrap { text-align: center; padding: 48px 0; color: #94a3b8; }
+
+/* ── Card grid ── */
 .members-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -364,12 +280,9 @@ onMounted(fetchData);
 }
 .act-btn--edit { background: rgba(59,130,246,.12); color: #1d4ed8; }
 .act-btn--edit:hover { background: rgba(59,130,246,.22); }
-.act-btn--del  { background: rgba(239,68,68,.1); color: #dc2626; }
-.act-btn--del:hover { background: rgba(239,68,68,.2); }
 @media (max-width: 768px) {
-  .admin-hero { flex-direction: column; padding: 20px; text-align: center; }
-  .hero-actions { width: 100%; display: flex; justify-content: center; }
-  .action-buttons { display: flex; gap: 12px; }
+  .admin-hero { flex-direction: column; padding: 20px; }
+  .hero-actions { width: 100%; align-items: stretch; }
   .members-grid { grid-template-columns: 1fr; }
 }
 </style>

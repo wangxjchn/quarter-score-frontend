@@ -48,10 +48,20 @@
         </template>
         <div class="quick-links">
           <router-link to="/" class="quick-link quick-link--primary">首页总览</router-link>
-          <router-link v-if="user?.role === 'admin'" to="/admin/teams" class="quick-link">小组管理</router-link>
-          <router-link v-if="user?.role === 'admin'" to="/admin/users" class="quick-link">员工管理</router-link>
-          <router-link v-if="user?.role === 'admin'" to="/admin/job-levels" class="quick-link">职级管理</router-link>
-          <router-link v-if="user?.role === 'admin'" to="/admin/job-titles" class="quick-link">职称管理</router-link>
+          <el-dropdown class="quick-dropdown">
+            <el-button class="quick-link quick-link--dropdown">
+              人员管理 <el-icon><arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item><router-link to="/admin/users">员工管理</router-link></el-dropdown-item>
+                <el-dropdown-item><router-link to="/admin/departments">职能管理</router-link></el-dropdown-item>
+                <el-dropdown-item><router-link to="/admin/teams">群组管理</router-link></el-dropdown-item>
+                <el-dropdown-item><router-link to="/admin/job-titles">职称管理</router-link></el-dropdown-item>
+                <el-dropdown-item><router-link to="/admin/job-levels">职级管理</router-link></el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
           <a href="/about/analysis/index.html" class="quick-link">查看需求分析</a>
         </div>
       </el-card>
@@ -195,6 +205,15 @@ const teamSummary = computed(() => {
   border-color: transparent;
   color: #fff;
 }
+.quick-dropdown .el-button {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #f8fafc;
+  color: #10233c;
+  font-weight: 600;
+  transition: all .18s ease;
+}
+.quick-dropdown .el-button:hover { border-color: #1d4ed8; color: #1d4ed8; }
 .info-list {
   margin: 0;
   padding-left: 18px;

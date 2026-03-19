@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Frontend</title>
+    <style>
+      /* 强制将 Element Plus 消息框定位到右下角 */
+      .el-message {
+        top: auto !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        left: auto !important;
+        transform: none !important;
+      }
+      .el-message-container {
+        position: fixed !important;
+        top: auto !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        left: auto !important;
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>

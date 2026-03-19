@@ -14,13 +14,21 @@
         <div class="desktop-nav">
           <router-link to="/" class="nav-link">首页</router-link>
           <template v-if="user.role === 'admin'">
-            <router-link to="/admin/teams" class="nav-link">小组管理</router-link>
-            <router-link to="/admin/users" class="nav-link">员工管理</router-link>
-            <router-link to="/admin/job-levels" class="nav-link">职级管理</router-link>
-            <router-link to="/admin/job-titles" class="nav-link">职称管理</router-link>
+            <el-dropdown class="nav-link nav-link--dropdown">
+              <span class="nav-link-text">人员管理 <el-icon><arrow-down /></el-icon></span>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item><router-link to="/admin/users">员工管理</router-link></el-dropdown-item>
+                  <el-dropdown-item><router-link to="/admin/departments">职能管理</router-link></el-dropdown-item>
+                  <el-dropdown-item><router-link to="/admin/teams">群组管理</router-link></el-dropdown-item>
+                  <el-dropdown-item><router-link to="/admin/job-titles">职称管理</router-link></el-dropdown-item>
+                  <el-dropdown-item><router-link to="/admin/job-levels">职级管理</router-link></el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
           <el-dropdown class="nav-link nav-link--dropdown">
-            <span class="el-dropdown-link">项目文档</span>
+            <span class="nav-link-text">项目文档 <el-icon><arrow-down /></el-icon></span>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item><a href="/about/requirements/index.html">需求文档</a></el-dropdown-item>
@@ -58,10 +66,14 @@
 
         <router-link to="/" class="mobile-nav-link" @click="drawerVisible = false">首页</router-link>
         <template v-if="user.role === 'admin'">
-          <router-link to="/admin/teams" class="mobile-nav-link" @click="drawerVisible = false">小组管理</router-link>
-          <router-link to="/admin/users" class="mobile-nav-link" @click="drawerVisible = false">员工管理</router-link>
-          <router-link to="/admin/job-levels" class="mobile-nav-link" @click="drawerVisible = false">职级管理</router-link>
-          <router-link to="/admin/job-titles" class="mobile-nav-link" @click="drawerVisible = false">职称管理</router-link>
+          <div class="mobile-nav-group">
+            <div class="mobile-nav-group__title">人员管理</div>
+            <router-link to="/admin/users" class="mobile-nav-link" @click="drawerVisible = false">员工管理</router-link>
+            <router-link to="/admin/departments" class="mobile-nav-link" @click="drawerVisible = false">职能管理</router-link>
+            <router-link to="/admin/teams" class="mobile-nav-link" @click="drawerVisible = false">群组管理</router-link>
+            <router-link to="/admin/job-titles" class="mobile-nav-link" @click="drawerVisible = false">职称管理</router-link>
+            <router-link to="/admin/job-levels" class="mobile-nav-link" @click="drawerVisible = false">职级管理</router-link>
+          </div>
         </template>
 
         <div class="mobile-docs">
@@ -300,6 +312,23 @@ a { color: inherit; text-decoration: none; }
   color: #10233c;
   font-weight: 600;
 }
+
+/* ── Admin Dialog Responsive ── */
+:deep(.admin-dialog) {
+  /* 桌面端：固定比例 70% 宽度，最大 600px */
+  width: 70vw !important;
+  max-width: 600px !important;
+}
+
+@media (max-width: 768px) {
+  /* 移动端：与页面宽度一致（减去边距） */
+  :deep(.admin-dialog) {
+    width: calc(100vw - 32px) !important; /* 左右各 16px 边距 */
+    max-width: none !important;
+    margin: 0 auto; /* 居中显示 */
+  }
+}
+
 @media (max-width: 960px) {
   .app-header { padding: 0 14px; }
   .header-main {
@@ -320,5 +349,23 @@ a { color: inherit; text-decoration: none; }
   }
   .app-brand { font-size: 18px; }
   .app-main { padding: 14px 14px 24px !important; }
+}
+
+/* ── Element Plus Message 位置调整到右下角 ── */
+:deep(.el-message) {
+  top: auto !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  left: auto !important;
+  transform: none !important; /* 覆盖默认的居中变换 */
+}
+
+/* 确保消息容器也在右下角 */
+:deep(.el-message-container) {
+  position: fixed !important;
+  top: auto !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  left: auto !important;
 }
 </style>

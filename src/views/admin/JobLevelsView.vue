@@ -50,7 +50,7 @@
       </article>
     </div>
 
-    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑职级' : '新增职级'" width="360px">
+    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑职级' : '新增职级'" class="admin-dialog">
       <el-form :model="form" label-position="top">
         <el-form-item label="职级名称">
           <el-input v-model="form.name" placeholder="如：初级、中级、高级" />

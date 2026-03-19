@@ -3,15 +3,14 @@
     <section class="admin-hero">
       <div>
         <p class="section-chip">Admin</p>
-        <h2>职称管理</h2>
-        <p>维护员工职称库。职称用于显示成员在小组中的职位定义，可关联到相应的职级（junior/mid/senior）。</p>
+        <h2>职能管理</h2>
       </div>
       <div class="hero-actions">
         <div class="hero-badge">
-          <strong>{{ filteredTitles.length }}</strong>
-          <span>当前职称数</span>
+          <strong>{{ filteredDepartments.length }}</strong>
+          <span>当前职能数</span>
         </div>
-        <el-button type="primary" class="hero-button" @click="openAdd">新增职称</el-button>
+        <el-button type="primary" class="hero-button" @click="openAdd">新增职能</el-button>
       </div>
     </section>
 
@@ -19,7 +18,7 @@
     <div class="search-bar">
       <el-input
         v-model="searchText"
-        placeholder="搜索职称名称..."
+        placeholder="搜索职能名称..."
         clearable
         prefix-icon="Search"
         class="search-input"
@@ -29,47 +28,36 @@
     <div v-if="loading" class="loading-wrap">
       <el-icon class="is-loading" :size="32"><Loading /></el-icon>
     </div>
-    <el-empty v-else-if="filteredTitles.length === 0" :description="searchText ? '无匹配结果' : '暂无职称，请点击右上角「新增职称」'" />
-    <div v-else class="titles-grid">
+    <el-empty v-else-if="filteredDepartments.length === 0" :description="searchText ? '无匹配结果' : '暂无职能，请点击右上角「新增职能」'" />
+    <div v-else class="departments-grid">
       <article
-        v-for="t in filteredTitles"
-        :key="t.id"
-        class="title-card"
+        v-for="dept in filteredDepartments"
+        :key="dept.id"
+        class="department-card"
       >
-        <div class="title-card__main">
-          <div class="title-card__avatar" :style="getAvatarStyle(t.name)">{{ t.name.charAt(0) }}</div>
-          <div class="title-card__info">
-            <strong class="title-card__name">{{ t.name }}</strong>
-            <el-tag v-if="t.level_id" :type="getLevelTag(t.level_code)" size="small" effect="plain">
-              {{ t.level_name || '未知职级' }}
-            </el-tag>
-          </div>
+        <div class="department-card__main">
+          <div class="department-card__avatar" :style="getAvatarStyle(dept.name)">{{ dept.name.charAt(0) }}</div>
+          <strong class="department-card__name">{{ dept.name }}</strong>
+          <el-tag size="small" effect="plain">{{ dept.member_count }}人</el-tag>
         </div>
         <div class="card-acts">
-          <button class="act-btn act-btn--edit" title="编辑" @click.stop="openEdit(t)">
+          <button class="act-btn act-btn--view" title="查看成员" @click.stop="goMembers(dept)">
+            <el-icon><UserFilled /></el-icon>
+          </button>
+          <button class="act-btn act-btn--edit" title="编辑" @click.stop="openEdit(dept)">
             <el-icon><Edit /></el-icon>
           </button>
-          <button class="act-btn act-btn--del" title="删除" @click.stop="handleDelete(t)">
+          <button class="act-btn act-btn--del" title="删除" @click.stop="handleDelete(dept)">
             <el-icon><Delete /></el-icon>
           </button>
         </div>
       </article>
     </div>
 
-    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑职称' : '新增职称'" class="admin-dialog">
-      <el-form :model="form" label-width="80px" label-position="left">
-        <el-form-item label="职称名称" required>
-          <el-input v-model="form.name" placeholder="如：高级工程师、产品经理" />
-        </el-form-item>
-        <el-form-item label="关联职级" required>
-          <el-select v-model="form.level_id" placeholder="选择职级（必选）" style="width: 100%">
-            <el-option
-              v-for="level in levels"
-              :key="level.id"
-              :label="level.name"
-              :value="level.id"
-            />
-          </el-select>
+    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑职能' : '新增职能'" width="420px">
+      <el-form :model="form" label-width="80px">
+        <el-form-item label="职能名称">
+          <el-input v-model="form.name" placeholder="如：技术部、市场部、财务部" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -82,85 +70,45 @@
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Loading, Edit, Delete } from '@element-plus/icons-vue';
+import { Loading, Edit, Delete, UserFilled } from '@element-plus/icons-vue';
 import { api } from '../../api';
 
-const titles     = ref([]);
-const levels     = ref([]);  // 新增：职级列表
-const searchText = ref('');
-const loading    = ref(false);
-const saving     = ref(false);
-const dlgVisible = ref(false);
-const editingId  = ref(null);
-const form       = reactive({ name: '', level_id: null });
+const router         = useRouter();
+const departments    = ref([]);
+const searchText     = ref('');
+const loading        = ref(false);
+const saving         = ref(false);
+const dlgVisible     = ref(false);
+const editingId      = ref(null);
+const form           = reactive({ name: '' });
 
-const filteredTitles = computed(() => {
-  if (!searchText.value.trim()) return titles.value;
+const filteredDepartments = computed(() => {
+  if (!searchText.value.trim()) return departments.value;
   const keyword = searchText.value.toLowerCase();
-  return titles.value.filter(title => 
-    title.name.toLowerCase().includes(keyword)
+  return departments.value.filter(dept => 
+    dept.name.toLowerCase().includes(keyword)
   );
 });
 
-async function fetchTitles() {
+async function fetchDepartments() {
   loading.value = true;
-  try {
-    titles.value = await api.get('/api/job-titles');
-    // 同时获取职级列表供选择
-    levels.value = await api.get('/api/job-levels');
-  } catch {
-    ElMessage.error('加载失败');
-  } finally {
-    loading.value = false;
-  }
+  try   { departments.value = await api.get('/api/departments'); }
+  catch  { ElMessage.error('加载职能失败'); }
+  finally { loading.value = false; }
 }
 
 function openAdd() {
   editingId.value  = null;
   form.name        = '';
-  form.level_id    = null;
   dlgVisible.value = true;
 }
 
-function openEdit(t) {
-  editingId.value  = t.id;
-  form.name        = t.name;
-  form.level_id    = t.level_id;
+function openEdit(row) {
+  editingId.value  = row.id;
+  form.name        = row.name;
   dlgVisible.value = true;
-}
-
-async function handleSave() {
-  if (!form.name.trim()) { ElMessage.warning('职称名称不能为空'); return; }
-  
-  // 验证职级（必选）
-  if (!form.level_id) {
-    ElMessage.warning('请选择关联职级（必选）');
-    return;
-  }
-  
-  saving.value = true;
-  try {
-    if (editingId.value) {
-      await api.put(`/api/job-titles/${editingId.value}`, {
-        name: form.name,
-        level_id: form.level_id
-      });
-      ElMessage.success('更新成功');
-    } else {
-      await api.post('/api/job-titles', {
-        name: form.name,
-        level_id: form.level_id
-      });
-      ElMessage.success('创建成功');
-    }
-    dlgVisible.value = false;
-    await fetchTitles();
-  } catch (e) {
-    ElMessage.error(e?.error || '操作失败');
-  } finally {
-    saving.value = false;
-  }
 }
 
 function getAvatarStyle(name) {
@@ -175,12 +123,36 @@ function getAvatarStyle(name) {
   return { background: colors[index] };
 }
 
-async function handleDelete(t) {
-  await ElMessageBox.confirm(`确认删除职称「${t.name}」？`, '提示', { type: 'warning' });
+async function handleSave() {
+  if (!form.name.trim()) { ElMessage.warning('职能名称不能为空'); return; }
+  saving.value = true;
   try {
-    await api.delete(`/api/job-titles/${t.id}`);
+    if (editingId.value) {
+      await api.put(`/api/departments/${editingId.value}`, form);
+      ElMessage.success('更新成功');
+    } else {
+      await api.post('/api/departments', form);
+      ElMessage.success('创建成功');
+    }
+    dlgVisible.value = false;
+    await fetchDepartments();
+  } catch (e) {
+    ElMessage.error(e?.error || '操作失败');
+  } finally {
+    saving.value = false;
+  }
+}
+
+function goMembers(dept) {
+  router.push(`/admin/departments/${dept.id}/members`);
+}
+
+async function handleDelete(row) {
+  await ElMessageBox.confirm(`确认删除职能「${row.name}」？`, '提示', { type: 'warning' });
+  try {
+    await api.delete(`/api/departments/${row.id}`);
     ElMessage.success('删除成功');
-    await fetchTitles();
+    await fetchDepartments();
   } catch (e) {
     if (e !== 'cancel') {
       ElMessage.error(e?.error || '删除失败');
@@ -188,15 +160,7 @@ async function handleDelete(t) {
   }
 }
 
-// 获取职级标签颜色
-function getLevelTag(code) {
-  if (code === 'junior') return 'success';
-  if (code === 'mid') return 'warning';
-  if (code === 'senior') return 'danger';
-  return 'info';
-}
-
-onMounted(fetchTitles);
+onMounted(fetchDepartments);
 </script>
 
 <style scoped>
@@ -236,13 +200,21 @@ onMounted(fetchTitles);
 .hero-button       { min-width: 132px; border-radius: 10px; }
 .loading-wrap      { text-align: center; padding: 48px 0; color: #94a3b8; }
 
+/* ── Search bar ── */
+.search-bar {
+  margin-bottom: 18px;
+}
+.search-input {
+  width: 100%;
+}
+
 /* ── Card grid ── */
-.titles-grid {
+.departments-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 14px;
 }
-.title-card {
+.department-card {
   position: relative;
   overflow: visible;
   border: 1px solid rgba(148, 163, 184, 0.18);
@@ -253,20 +225,14 @@ onMounted(fetchTitles);
   display: flex;
   flex-direction: column;
 }
-.title-card__main {
-  padding: 18px 16px 18px 16px;
+.department-card__main {
+  padding: 18px 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   flex: 1;
 }
-.title-card__info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-.title-card__avatar {
+.department-card__avatar {
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -278,7 +244,7 @@ onMounted(fetchTitles);
   font-weight: 700;
   flex-shrink: 0;
 }
-.title-card__name {
+.department-card__name {
   font-size: 16px;
   color: #1e293b;
   font-weight: 600;
@@ -308,6 +274,8 @@ onMounted(fetchTitles);
   transition: all .15s;
   flex-shrink: 0;
 }
+.act-btn--view { background: rgba(6,182,212,.12); color: #0891b2; }
+.act-btn--view:hover { background: rgba(6,182,212,.22); }
 .act-btn--edit { background: rgba(59,130,246,.12); color: #1d4ed8; }
 .act-btn--edit:hover { background: rgba(59,130,246,.22); }
 .act-btn--del  { background: rgba(239,68,68,.1); color: #dc2626; }
@@ -316,6 +284,6 @@ onMounted(fetchTitles);
 @media (max-width: 768px) {
   .admin-hero    { flex-direction: column; padding: 20px; }
   .hero-actions  { width: 100%; align-items: stretch; }
-  .titles-grid   { grid-template-columns: 1fr; }
+  .departments-grid   { grid-template-columns: 1fr; }
 }
 </style>
