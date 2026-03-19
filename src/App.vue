@@ -16,6 +16,7 @@
           <template v-if="user.role === 'admin'">
             <router-link to="/admin/teams" class="nav-link">小组管理</router-link>
             <router-link to="/admin/users" class="nav-link">员工管理</router-link>
+            <router-link to="/admin/job-levels" class="nav-link">职级管理</router-link>
             <router-link to="/admin/job-titles" class="nav-link">职称管理</router-link>
           </template>
           <el-dropdown class="nav-link nav-link--dropdown">
@@ -59,6 +60,7 @@
         <template v-if="user.role === 'admin'">
           <router-link to="/admin/teams" class="mobile-nav-link" @click="drawerVisible = false">小组管理</router-link>
           <router-link to="/admin/users" class="mobile-nav-link" @click="drawerVisible = false">员工管理</router-link>
+          <router-link to="/admin/job-levels" class="mobile-nav-link" @click="drawerVisible = false">职级管理</router-link>
           <router-link to="/admin/job-titles" class="mobile-nav-link" @click="drawerVisible = false">职称管理</router-link>
         </template>
 

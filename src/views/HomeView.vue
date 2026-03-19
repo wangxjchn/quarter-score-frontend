@@ -48,8 +48,10 @@
         </template>
         <div class="quick-links">
           <router-link to="/" class="quick-link quick-link--primary">首页总览</router-link>
-          <router-link v-if="user?.role === 'admin'" to="/admin/teams" class="quick-link">进入小组管理</router-link>
-          <router-link v-if="user?.role === 'admin'" to="/admin/users" class="quick-link">进入员工管理</router-link>
+          <router-link v-if="user?.role === 'admin'" to="/admin/teams" class="quick-link">小组管理</router-link>
+          <router-link v-if="user?.role === 'admin'" to="/admin/users" class="quick-link">员工管理</router-link>
+          <router-link v-if="user?.role === 'admin'" to="/admin/job-levels" class="quick-link">职级管理</router-link>
+          <router-link v-if="user?.role === 'admin'" to="/admin/job-titles" class="quick-link">职称管理</router-link>
           <a href="/about/analysis/index.html" class="quick-link">查看需求分析</a>
         </div>
       </el-card>

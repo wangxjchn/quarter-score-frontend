@@ -7,6 +7,7 @@ import TeamsView       from './views/admin/TeamsView.vue';
 import UsersView       from './views/admin/UsersView.vue';
 import TeamMembersView from './views/admin/TeamMembersView.vue';
 import JobTitlesView   from './views/admin/JobTitlesView.vue';
+import JobLevelsView   from './views/admin/JobLevelsView.vue'; // 新增职级管理
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -17,6 +18,7 @@ const router = createRouter({
     { path: '/admin/teams/:id/members', component: TeamMembersView, meta: { admin: true } },
     { path: '/admin/users',             component: UsersView,       meta: { admin: true } },
     { path: '/admin/job-titles',        component: JobTitlesView,   meta: { admin: true } },
+    { path: '/admin/job-levels',        component: JobLevelsView,   meta: { admin: true } }, // 新增职级管理路由
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 });

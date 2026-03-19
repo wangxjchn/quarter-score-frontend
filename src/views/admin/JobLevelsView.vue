@@ -3,62 +3,46 @@
     <section class="admin-hero">
       <div>
         <p class="section-chip">Admin</p>
-        <h2>职称管理</h2>
-        <p>维护员工职称库。职称用于显示成员在小组中的职位定义，可关联到相应的职级（junior/mid/senior）。</p>
+        <h2>职级管理</h2>
       </div>
       <div class="hero-actions">
         <div class="hero-badge">
-          <strong>{{ titles.length }}</strong>
-          <span>当前职称数</span>
+          <strong>{{ levels.length }}</strong>
+          <span>当前职级数</span>
         </div>
-        <el-button type="primary" class="hero-button" @click="openAdd">新增职称</el-button>
+        <el-button type="primary" class="hero-button" @click="openAdd">新增职级</el-button>
       </div>
     </section>
 
     <div v-if="loading" class="loading-wrap">
       <el-icon class="is-loading" :size="32"><Loading /></el-icon>
     </div>
-    <el-empty v-else-if="titles.length === 0" description="暂无职称，请点击右上角「新增职称」" />
-    <div v-else class="titles-grid">
+    <el-empty v-else-if="levels.length === 0" description="暂无职级，请点击右上角「新增职级」" />
+    <div v-else class="levels-grid">
       <article
-        v-for="t in titles"
-        :key="t.id"
-        class="title-card"
+        v-for="level in levels"
+        :key="level.id"
+        class="level-card"
       >
-        <div class="title-card__main">
-          <div class="title-card__avatar">{{ t.name.charAt(0) }}</div>
-          <div class="title-card__info">
-            <strong class="title-card__name">{{ t.name }}</strong>
-            <el-tag v-if="t.level_id" :type="getLevelTag(t.level_code)" size="small" effect="plain">
-              {{ t.level_name || '未知职级' }}
-            </el-tag>
-          </div>
+        <div class="level-card__main">
+          <div class="level-card__avatar">{{ level.name.charAt(0) }}</div>
+          <strong class="level-card__name">{{ level.name }}</strong>
         </div>
         <div class="card-acts">
-          <button class="act-btn act-btn--edit" title="编辑" @click.stop="openEdit(t)">
+          <button class="act-btn act-btn--edit" title="编辑" @click.stop="openEdit(level)">
             <el-icon><Edit /></el-icon>
           </button>
-          <button class="act-btn act-btn--del" title="删除" @click.stop="handleDelete(t)">
+          <button class="act-btn act-btn--del" title="删除" @click.stop="handleDelete(level)">
             <el-icon><Delete /></el-icon>
           </button>
         </div>
       </article>
     </div>
 
-    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑职称' : '新增职称'" width="420px">
-      <el-form :model="form" label-width="80px" label-position="left">
-        <el-form-item label="职称名称" required>
-          <el-input v-model="form.name" placeholder="如：高级工程师、产品经理" />
-        </el-form-item>
-        <el-form-item label="关联职级">
-          <el-select v-model="form.level_id" placeholder="选择职级（可选）" clearable style="width: 100%">
-            <el-option
-              v-for="level in levels"
-              :key="level.id"
-              :label="`${level.name} (${level.code})`"
-              :value="level.id"
-            />
-          </el-select>
+    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑职级' : '新增职级'" width="360px">
+      <el-form :model="form" label-position="top">
+        <el-form-item label="职级名称">
+          <el-input v-model="form.name" placeholder="如：初级、中级、高级" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -75,19 +59,16 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Loading, Edit, Delete } from '@element-plus/icons-vue';
 import { api } from '../../api';
 
-const titles     = ref([]);
-const levels     = ref([]);  // 新增：职级列表
+const levels     = ref([]);
 const loading    = ref(false);
 const saving     = ref(false);
 const dlgVisible = ref(false);
 const editingId  = ref(null);
-const form       = reactive({ name: '', level_id: null });
+const form       = reactive({ name: '' });
 
-async function fetchTitles() {
+async function fetchLevels() {
   loading.value = true;
   try {
-    titles.value = await api.get('/api/job-titles');
-    // 同时获取职级列表供选择
     levels.value = await api.get('/api/job-levels');
   } catch {
     ElMessage.error('加载失败');
@@ -99,36 +80,31 @@ async function fetchTitles() {
 function openAdd() {
   editingId.value  = null;
   form.name        = '';
-  form.level_id    = null;
   dlgVisible.value = true;
 }
 
-function openEdit(t) {
-  editingId.value  = t.id;
-  form.name        = t.name;
-  form.level_id    = t.level_id;
+function openEdit(level) {
+  editingId.value  = level.id;
+  form.name        = level.name;
   dlgVisible.value = true;
 }
 
 async function handleSave() {
-  if (!form.name.trim()) { ElMessage.warning('职称名称不能为空'); return; }
+  if (!form.name.trim()) {
+    ElMessage.warning('职级名称不能为空');
+    return;
+  }
   saving.value = true;
   try {
     if (editingId.value) {
-      await api.put(`/api/job-titles/${editingId.value}`, {
-        name: form.name,
-        level_id: form.level_id
-      });
+      await api.put(`/api/job-levels/${editingId.value}`, { name: form.name });
       ElMessage.success('更新成功');
     } else {
-      await api.post('/api/job-titles', {
-        name: form.name,
-        level_id: form.level_id
-      });
+      await api.post('/api/job-levels', { name: form.name });
       ElMessage.success('创建成功');
     }
     dlgVisible.value = false;
-    await fetchTitles();
+    await fetchLevels();
   } catch (e) {
     ElMessage.error(e?.error || '操作失败');
   } finally {
@@ -136,12 +112,12 @@ async function handleSave() {
   }
 }
 
-async function handleDelete(t) {
-  await ElMessageBox.confirm(`确认删除职称「${t.name}」？`, '提示', { type: 'warning' });
+async function handleDelete(level) {
+  await ElMessageBox.confirm(`确认删除职级「${level.name}」？`, '提示', { type: 'warning' });
   try {
-    await api.delete(`/api/job-titles/${t.id}`);
+    await api.delete(`/api/job-levels/${level.id}`);
     ElMessage.success('删除成功');
-    await fetchTitles();
+    await fetchLevels();
   } catch (e) {
     if (e !== 'cancel') {
       ElMessage.error(e?.error || '删除失败');
@@ -149,15 +125,7 @@ async function handleDelete(t) {
   }
 }
 
-// 获取职级标签颜色
-function getLevelTag(code) {
-  if (code === 'junior') return 'success';
-  if (code === 'mid') return 'warning';
-  if (code === 'senior') return 'danger';
-  return 'info';
-}
-
-onMounted(fetchTitles);
+onMounted(fetchLevels);
 </script>
 
 <style scoped>
@@ -198,12 +166,12 @@ onMounted(fetchTitles);
 .loading-wrap      { text-align: center; padding: 48px 0; color: #94a3b8; }
 
 /* ── Card grid ── */
-.titles-grid {
+.levels-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 14px;
 }
-.title-card {
+.level-card {
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.18);
@@ -212,19 +180,13 @@ onMounted(fetchTitles);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
   transition: box-shadow .2s;
 }
-.title-card__main {
+.level-card__main {
   padding: 18px 16px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
 }
-.title-card__info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-}
-.title-card__avatar {
+.level-card__avatar {
   width: 34px;
   height: 34px;
   border-radius: 50%;
@@ -237,7 +199,7 @@ onMounted(fetchTitles);
   font-weight: 700;
   flex-shrink: 0;
 }
-.title-card__name { font-size: 16px; color: #1e293b; font-weight: 600; }
+.level-card__name { font-size: 16px; color: #1e293b; font-weight: 600; }
 .card-acts {
   position: absolute;
   right: 8px;
@@ -246,7 +208,7 @@ onMounted(fetchTitles);
   flex-direction: row;
   gap: 6px;
 }
-.title-card:hover { box-shadow: 0 8px 24px rgba(29, 78, 216, 0.1); }
+.level-card:hover { box-shadow: 0 8px 24px rgba(29, 78, 216, 0.1); }
 .act-btn {
   width: 30px; height: 30px; border: none; border-radius: 8px;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
@@ -260,6 +222,6 @@ onMounted(fetchTitles);
 @media (max-width: 768px) {
   .admin-hero    { flex-direction: column; padding: 20px; }
   .hero-actions  { width: 100%; align-items: stretch; }
-  .titles-grid   { grid-template-columns: 1fr; }
+  .levels-grid   { grid-template-columns: 1fr; }
 }
 </style>
