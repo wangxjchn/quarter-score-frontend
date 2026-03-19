@@ -8,25 +8,36 @@
       </div>
       <div class="hero-actions">
         <div class="hero-badge">
-          <strong>{{ titles.length }}</strong>
+          <strong>{{ filteredTitles.length }}</strong>
           <span>当前职称数</span>
         </div>
         <el-button type="primary" class="hero-button" @click="openAdd">新增职称</el-button>
       </div>
     </section>
 
+    <!-- 搜索过滤栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchText"
+        placeholder="搜索职称名称..."
+        clearable
+        prefix-icon="Search"
+        class="search-input"
+      />
+    </div>
+
     <div v-if="loading" class="loading-wrap">
       <el-icon class="is-loading" :size="32"><Loading /></el-icon>
     </div>
-    <el-empty v-else-if="titles.length === 0" description="暂无职称，请点击右上角「新增职称」" />
+    <el-empty v-else-if="filteredTitles.length === 0" :description="searchText ? '无匹配结果' : '暂无职称，请点击右上角「新增职称」'" />
     <div v-else class="titles-grid">
       <article
-        v-for="t in titles"
+        v-for="t in filteredTitles"
         :key="t.id"
         class="title-card"
       >
         <div class="title-card__main">
-          <div class="title-card__avatar">{{ t.name.charAt(0) }}</div>
+          <div class="title-card__avatar" :style="getAvatarStyle(t.name)">{{ t.name.charAt(0) }}</div>
           <div class="title-card__info">
             <strong class="title-card__name">{{ t.name }}</strong>
             <el-tag v-if="t.level_id" :type="getLevelTag(t.level_code)" size="small" effect="plain">
@@ -70,18 +81,27 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Loading, Edit, Delete } from '@element-plus/icons-vue';
 import { api } from '../../api';
 
 const titles     = ref([]);
 const levels     = ref([]);  // 新增：职级列表
+const searchText = ref('');
 const loading    = ref(false);
 const saving     = ref(false);
 const dlgVisible = ref(false);
 const editingId  = ref(null);
 const form       = reactive({ name: '', level_id: null });
+
+const filteredTitles = computed(() => {
+  if (!searchText.value.trim()) return titles.value;
+  const keyword = searchText.value.toLowerCase();
+  return titles.value.filter(title => 
+    title.name.toLowerCase().includes(keyword)
+  );
+});
 
 async function fetchTitles() {
   loading.value = true;
@@ -134,6 +154,18 @@ async function handleSave() {
   } finally {
     saving.value = false;
   }
+}
+
+function getAvatarStyle(name) {
+  const colors = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  ];
+  const index = name.charCodeAt(0) % colors.length;
+  return { background: colors[index] };
 }
 
 async function handleDelete(t) {

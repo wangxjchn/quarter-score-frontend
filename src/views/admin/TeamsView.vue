@@ -8,20 +8,31 @@
       </div>
       <div class="hero-actions">
         <div class="hero-badge">
-          <strong>{{ teams.length }}</strong>
+          <strong>{{ filteredTeams.length }}</strong>
           <span>当前小组数</span>
         </div>
         <el-button type="primary" class="hero-button" @click="openAdd">新增小组</el-button>
       </div>
     </section>
 
+    <!-- 搜索过滤栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchText"
+        placeholder="搜索小组名称..."
+        clearable
+        prefix-icon="Search"
+        class="search-input"
+      />
+    </div>
+
     <div v-if="loading" class="loading-wrap">
       <el-icon class="is-loading" :size="32"><Loading /></el-icon>
     </div>
-    <el-empty v-else-if="teams.length === 0" description="暂无小组" />
+    <el-empty v-else-if="filteredTeams.length === 0" :description="searchText ? '无匹配结果' : '暂无小组'" />
     <div v-else class="teams-grid" @click="swipedId = null">
       <article
-        v-for="team in teams"
+        v-for="team in filteredTeams"
         :key="team.id"
         class="team-card"
         :class="{ 'is-swiped': swipedId === team.id }"
@@ -29,8 +40,9 @@
         @touchend.passive="e => onTouchEnd(e, team.id)"
       >
         <div class="team-card__main">
-          <h3 class="team-card__name">{{ team.name }}</h3>
-          <span class="team-card__count">{{ team.member_count }} 人</span>
+          <div class="team-card__avatar" :style="getAvatarStyle(team.name)">{{ team.name.charAt(0) }}</div>
+          <strong class="team-card__name">{{ team.name }}</strong>
+          <el-tag size="small" effect="plain">{{ team.member_count }}人</el-tag>
         </div>
         <div class="card-acts">
           <button class="act-btn act-btn--view" title="查看成员" @click.stop="goMembers(team)">
@@ -61,7 +73,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Loading, Edit, Delete, UserFilled } from '@element-plus/icons-vue';
@@ -69,6 +81,7 @@ import { api } from '../../api';
 
 const router     = useRouter();
 const teams      = ref([]);
+const searchText = ref('');
 const loading    = ref(false);
 const saving     = ref(false);
 const dlgVisible = ref(false);
@@ -77,6 +90,14 @@ const form       = reactive({ name: '' });
 
 let _tx0 = 0;
 const swipedId = ref(null);
+
+const filteredTeams = computed(() => {
+  if (!searchText.value.trim()) return teams.value;
+  const keyword = searchText.value.toLowerCase();
+  return teams.value.filter(team => 
+    team.name.toLowerCase().includes(keyword)
+  );
+});
 function onTouchStart(e) { _tx0 = e.touches[0].clientX; }
 function onTouchEnd(e, id) {
   const dx = _tx0 - e.changedTouches[0].clientX;
@@ -125,6 +146,18 @@ async function handleSave() {
   } finally {
     saving.value = false;
   }
+}
+
+function getAvatarStyle(name) {
+  const colors = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  ];
+  const index = name.charCodeAt(0) % colors.length;
+  return { background: colors[index] };
 }
 
 async function handleDelete(row) {
@@ -178,51 +211,86 @@ onMounted(fetchTeams);
 .hero-button       { min-width: 132px; border-radius: 10px; }
 .loading-wrap      { text-align: center; padding: 48px 0; color: #94a3b8; }
 
+/* ── Search bar ── */
+.search-bar {
+  margin-bottom: 18px;
+}
+.search-input {
+  width: 100%;
+}
+
 /* ── Card grid ── */
 .teams-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
 }
 .team-card {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 18px;
+  border-radius: 16px;
   background: rgba(255,255,255,.96);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
   transition: box-shadow .2s;
-}
-.team-card__main {
-  padding: 20px 18px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  transition: transform .22s ease;
 }
-.team-card__name  { margin: 0; font-size: 18px; font-weight: 700; color: #1e293b; }
-.team-card__count { font-size: 13px; color: #64748b; }
+.team-card__main {
+  padding: 18px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+.team-card__avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.team-card__name {
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
 .card-acts {
-  position: absolute; right: 0; top: 0; bottom: 0;
-  display: flex; flex-direction: column; justify-content: center; gap: 6px;
-  padding: 8px;
-  background: linear-gradient(90deg, transparent, rgba(248,251,255,.96) 30%);
-}
-@media (hover: hover) {
-  .card-acts { opacity: 0; transition: opacity .18s; }
-  .team-card:hover .card-acts { opacity: 1; }
-  .team-card:hover { box-shadow: 0 8px 28px rgba(29, 78, 216, 0.12); }
-}
-@media (hover: none) {
-  .team-card.is-swiped .team-card__main { transform: translateX(-90px); }
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(248, 250, 252, 0.4);
+  border-radius: 0 0 16px 16px;
 }
 .act-btn {
-  width: 34px; height: 34px; border: none; border-radius: 10px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  font-size: 16px; transition: background .12s;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all .15s;
+  flex-shrink: 0;
 }
 .act-btn--view { background: rgba(6,182,212,.12); color: #0891b2; }
 .act-btn--view:hover { background: rgba(6,182,212,.22); }
+.act-btn--edit { background: rgba(59,130,246,.12); color: #1d4ed8; }
+.act-btn--edit:hover { background: rgba(59,130,246,.22); }
+.act-btn--del  { background: rgba(239,68,68,.1); color: #dc2626; }
+.act-btn--del:hover { background: rgba(239,68,68,.2); }
 .act-btn--edit { background: rgba(59,130,246,.12); color: #1d4ed8; }
 .act-btn--edit:hover { background: rgba(59,130,246,.22); }
 .act-btn--del  { background: rgba(239,68,68,.1); color: #dc2626; }

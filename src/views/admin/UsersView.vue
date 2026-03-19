@@ -8,20 +8,31 @@
       </div>
       <div class="hero-actions">
         <div class="hero-badge hero-badge--light">
-          <strong>{{ users.length }}</strong>
+          <strong>{{ filteredUsers.length }}</strong>
           <span>当前员工数</span>
         </div>
         <el-button type="primary" class="hero-button" @click="openAdd">新增员工</el-button>
       </div>
     </section>
 
+    <!-- 搜索过滤栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchText"
+        placeholder="搜索员工姓名或工号..."
+        clearable
+        prefix-icon="Search"
+        class="search-input"
+      />
+    </div>
+
     <div v-if="loading" class="loading-wrap">
       <el-icon class="is-loading" :size="32"><Loading /></el-icon>
     </div>
-    <el-empty v-else-if="users.length === 0" description="暂无员工" />
+    <el-empty v-else-if="filteredUsers.length === 0" :description="searchText ? '无匹配结果' : '暂无员工'" />
     <div v-else class="users-grid" @click="swipedId = null">
       <article
-        v-for="u in users"
+        v-for="u in filteredUsers"
         :key="u.id"
         class="user-card"
         :class="{ 'is-swiped': swipedId === u.id }"
@@ -29,7 +40,7 @@
         @touchend.passive="e => onTouchEnd(e, u.id)"
       >
         <div class="user-card__main">
-          <div class="user-avatar" :class="`avatar--${u.role}`">{{ u.name.charAt(0) }}</div>
+          <div class="user-avatar avatar--{{ u.role }}">{{ u.name.charAt(0) }}</div>
           <div class="user-info">
             <strong class="user-name">{{ u.name }}</strong>
             <span class="user-title">{{ u.title_name || ROLE_LABELS[u.role] }}</span>
@@ -84,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Loading, Edit, Delete } from '@element-plus/icons-vue';
 import { api } from '../../api';
@@ -95,6 +106,7 @@ const LEVEL_LABELS = { junior: '助理',  mid: '中级',   senior: '高级'   };
 const users      = ref([]);
 const teams      = ref([]);
 const jobTitles  = ref([]);
+const searchText = ref('');
 const loading    = ref(false);
 const saving     = ref(false);
 const dlgVisible = ref(false);
@@ -103,6 +115,15 @@ const form       = reactive({ employee_id: '', name: '', role: 'employee', level
 
 let _tx0 = 0;
 const swipedId = ref(null);
+
+const filteredUsers = computed(() => {
+  if (!searchText.value.trim()) return users.value;
+  const keyword = searchText.value.toLowerCase();
+  return users.value.filter(user => 
+    user.name.toLowerCase().includes(keyword) ||
+    user.employee_id.toLowerCase().includes(keyword)
+  );
+});
 function onTouchStart(e) { _tx0 = e.touches[0].clientX; }
 function onTouchEnd(e, id) {
   const dx = _tx0 - e.changedTouches[0].clientX;

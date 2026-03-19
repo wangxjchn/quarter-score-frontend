@@ -7,25 +7,36 @@
       </div>
       <div class="hero-actions">
         <div class="hero-badge">
-          <strong>{{ levels.length }}</strong>
+          <strong>{{ filteredLevels.length }}</strong>
           <span>当前职级数</span>
         </div>
         <el-button type="primary" class="hero-button" @click="openAdd">新增职级</el-button>
       </div>
     </section>
 
+    <!-- 搜索过滤栏 -->
+    <div class="search-bar">
+      <el-input
+        v-model="searchText"
+        placeholder="搜索职级名称..."
+        clearable
+        prefix-icon="Search"
+        class="search-input"
+      />
+    </div>
+
     <div v-if="loading" class="loading-wrap">
       <el-icon class="is-loading" :size="32"><Loading /></el-icon>
     </div>
-    <el-empty v-else-if="levels.length === 0" description="暂无职级，请点击右上角「新增职级」" />
+    <el-empty v-else-if="filteredLevels.length === 0" :description="searchText ? '无匹配结果' : '暂无职级，请点击右上角「新增职级」'" />
     <div v-else class="levels-grid">
       <article
-        v-for="level in levels"
+        v-for="level in filteredLevels"
         :key="level.id"
         class="level-card"
       >
         <div class="level-card__main">
-          <div class="level-card__avatar">{{ level.name.charAt(0) }}</div>
+          <div class="level-card__avatar" :style="getAvatarStyle(level.name)">{{ level.name.charAt(0) }}</div>
           <strong class="level-card__name">{{ level.name }}</strong>
         </div>
         <div class="card-acts">
@@ -54,17 +65,26 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Loading, Edit, Delete } from '@element-plus/icons-vue';
 import { api } from '../../api';
 
 const levels     = ref([]);
+const searchText = ref('');
 const loading    = ref(false);
 const saving     = ref(false);
 const dlgVisible = ref(false);
 const editingId  = ref(null);
 const form       = reactive({ name: '' });
+
+const filteredLevels = computed(() => {
+  if (!searchText.value.trim()) return levels.value;
+  const keyword = searchText.value.toLowerCase();
+  return levels.value.filter(level => 
+    level.name.toLowerCase().includes(keyword)
+  );
+});
 
 async function fetchLevels() {
   loading.value = true;
@@ -110,6 +130,18 @@ async function handleSave() {
   } finally {
     saving.value = false;
   }
+}
+
+function getAvatarStyle(name) {
+  const colors = [
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+  ];
+  const index = name.charCodeAt(0) % colors.length;
+  return { background: colors[index] };
 }
 
 async function handleDelete(level) {
@@ -165,54 +197,79 @@ onMounted(fetchLevels);
 .hero-button       { min-width: 132px; border-radius: 10px; }
 .loading-wrap      { text-align: center; padding: 48px 0; color: #94a3b8; }
 
+/* ── Search bar ── */
+.search-bar {
+  margin-bottom: 18px;
+}
+.search-input {
+  width: 100%;
+}
+
 /* ── Card grid ── */
 .levels-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 14px;
 }
 .level-card {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 16px;
   background: rgba(255,255,255,.96);
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
   transition: box-shadow .2s;
+  display: flex;
+  flex-direction: column;
 }
 .level-card__main {
-  padding: 18px 16px;
+  padding: 18px 16px 18px 16px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  flex: 1;
 }
 .level-card__avatar {
-  width: 34px;
-  height: 34px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1d4ed8, #06b6d4);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   flex-shrink: 0;
 }
-.level-card__name { font-size: 16px; color: #1e293b; font-weight: 600; }
-.card-acts {
-  position: absolute;
-  right: 8px;
-  top: 8px;
-  display: flex;
-  flex-direction: row;
-  gap: 6px;
+.level-card__name {
+  font-size: 16px;
+  color: #1e293b;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
 }
-.level-card:hover { box-shadow: 0 8px 24px rgba(29, 78, 216, 0.1); }
+.card-acts {
+  display: flex;
+  gap: 6px;
+  padding: 12px 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(248, 250, 252, 0.4);
+  border-radius: 0 0 16px 16px;
+}
 .act-btn {
-  width: 30px; height: 30px; border: none; border-radius: 8px;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; transition: background .12s;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all .15s;
+  flex-shrink: 0;
 }
 .act-btn--edit { background: rgba(59,130,246,.12); color: #1d4ed8; }
 .act-btn--edit:hover { background: rgba(59,130,246,.22); }
