@@ -4,9 +4,15 @@
       <div>
         <p class="section-chip">Admin</p>
         <h2>{{ department?.name || '职能成员' }}</h2>
-        <p v-if="department" class="hero-desc">共 {{ members.length }} 名员工</p>
+        <p v-if="department" class="hero-desc">统一维护本职能下的员工信息，包括工号、姓名、角色和职称等。</p>
       </div>
-      <el-button class="hero-button" @click="goBack">返回</el-button>
+      <div class="hero-actions">
+        <div class="hero-badge">
+          <strong>{{ members.length }}</strong>
+          <span>当前员工数</span>
+        </div>
+        <el-button class="hero-button" @click="goBack">返回</el-button>
+      </div>
     </section>
 
     <div v-if="loading" class="loading-wrap">
@@ -187,7 +193,6 @@ onMounted(fetchMembers);
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 18px;
   padding: 24px;
 }
@@ -201,6 +206,24 @@ onMounted(fetchMembers);
 }
 .admin-hero h2 { margin: 0 0 8px; font-size: 32px; }
 .hero-desc { margin: 0; max-width: 680px; color: #60708a; line-height: 1.75; }
+
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+  min-width: 180px;
+}
+.hero-badge {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+  color: #fff;
+  text-align: right;
+  box-shadow: 0 12px 24px rgba(29, 78, 216, 0.25);
+}
+.hero-badge strong { display: block; font-size: 28px; }
+.hero-badge span { font-size: 13px; opacity: .86; }
 .hero-button { min-width: 132px; border-radius: 10px; }
 .loading-wrap { text-align: center; padding: 48px 0; color: #94a3b8; }
 

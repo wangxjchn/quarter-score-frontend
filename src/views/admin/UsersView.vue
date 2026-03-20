@@ -249,6 +249,8 @@ onMounted(async () => {
   background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(226, 244, 255, .9));
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
 }
+
+
 .section-chip {
   margin: 0 0 8px;
   color: #1d4ed8;

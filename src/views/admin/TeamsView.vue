@@ -58,7 +58,7 @@
       </article>
     </div>
 
-    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑小组' : '新增小组'" width="360px">
+    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑小组' : '新增小组'" width="360px"  class="admin-dialog">
       <el-form :model="form" label-position="top">
         <el-form-item label="小组名称">
           <el-input v-model="form.name" placeholder="请输入小组名称" />

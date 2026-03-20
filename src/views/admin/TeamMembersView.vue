@@ -4,13 +4,15 @@
       <div>
         <p class="section-chip">Admin</p>
         <h2>{{ teamName || '群组成员' }}</h2>
-        <p class="hero-desc">共 {{ members.length }} 名成员</p>
+        <p v-if="teamName" class="hero-desc">统一维护本群组下的成员信息，包括工号、姓名、角色和职称等。</p>
       </div>
       <div class="hero-actions">
-        <div class="action-buttons">
-          <el-button type="primary" class="hero-button" @click="openAddMember">
-            <el-icon style="margin-right:4px"><Plus /></el-icon>添加成员
-          </el-button>
+        <div class="hero-badge">
+          <strong>{{ members.length }}</strong>
+          <span>当前成员数</span>
+        </div>
+        <div class="hero-buttons">
+          <el-button type="primary" class="hero-button" @click="openAddMember">添加成员</el-button>
           <el-button class="hero-button" @click="$router.back()">返回</el-button>
         </div>
       </div>
@@ -213,11 +215,11 @@ async function fetchData() {
       api.get('/api/job-titles'),
       api.get('/api/departments'),
     ]);
-    team            = allTeams.find(t => String(t.id) === String(id)) || null;
-    teamName.value  = team?.name || '';
-    members.value   = memberData;
-    allUsers.value  = userData;
-    jobTitles.value = jobTitlesData;
+    team.value        = allTeams.find(t => String(t.id) === String(id)) || null;
+    teamName.value    = team.value?.name || '';
+    members.value     = memberData;
+    allUsers.value    = userData;
+    jobTitles.value   = jobTitlesData;
     departments.value = departmentsData;
   } catch (err) {
     console.error('加载失败:', err);
@@ -271,7 +273,6 @@ onMounted(fetchData);
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 18px;
   padding: 24px;
 }
@@ -285,9 +286,25 @@ onMounted(fetchData);
 }
 .admin-hero h2 { margin: 0 0 8px; font-size: 32px; }
 .hero-desc { margin: 0; max-width: 680px; color: #60708a; line-height: 1.75; }
-.hero-actions  { display: flex; align-items: center; min-width: 280px; }
-.action-buttons { display: flex; gap: 12px; }
-.hero-button { min-width: 120px; border-radius: 10px; }
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+  min-width: 180px;
+}
+.hero-badge {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+  color: #fff;
+  text-align: right;
+  box-shadow: 0 12px 24px rgba(29, 78, 216, 0.25);
+}
+.hero-badge strong { display: block; font-size: 28px; }
+.hero-badge span { font-size: 13px; opacity: .86; }
+.hero-buttons {display: flex;justify-content: flex-end; /* 右对齐 */gap: 12px; /* 按钮间距 */}
+.hero-button { flex: 0 0 auto; border-radius: 10px; }
 .loading-wrap { text-align: center; padding: 48px 0; color: #94a3b8; }
 .members-grid {
   display: grid;
@@ -367,9 +384,13 @@ onMounted(fetchData);
 .act-btn--del  { background: rgba(239,68,68,.1); color: #dc2626; }
 .act-btn--del:hover { background: rgba(239,68,68,.2); }
 @media (max-width: 768px) {
-  .admin-hero { flex-direction: column; padding: 20px; text-align: center; }
-  .hero-actions { width: 100%; display: flex; justify-content: center; }
-  .action-buttons { display: flex; gap: 12px; }
+  .admin-hero { flex-direction: column; padding: 20px; }
+  .hero-actions { width: 100%; align-items: stretch; }
   .members-grid { grid-template-columns: 1fr; }
+  .hero-buttons {width: 100%; justify-content: space-between; 
+  }
+  .hero-button {
+    flex: 1; 
+  }
 }
 </style>

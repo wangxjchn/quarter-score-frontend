@@ -54,7 +54,7 @@
       </article>
     </div>
 
-    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑职能' : '新增职能'" width="420px">
+    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑职能' : '新增职能'" width="420px" class="admin-dialog">
       <el-form :model="form" label-width="80px">
         <el-form-item label="职能名称">
           <el-input v-model="form.name" placeholder="如：技术部、市场部、财务部" />

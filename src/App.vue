@@ -66,9 +66,9 @@
 
         <router-link to="/" class="mobile-nav-link" @click="drawerVisible = false">首页</router-link>
         <template v-if="user.role === 'admin'">
-          <div class="mobile-nav-group">
-            <div class="mobile-nav-group__title">人员管理</div>
-            <router-link to="/admin/users" class="mobile-nav-link" @click="drawerVisible = false">员工管理</router-link>
+          <div class="mobile-docs">
+            <p>人员管理</p>
+            <router-link to="/admin/users" class="mobile-nav-link"  @click="drawerVisible = false">员工管理</router-link>
             <router-link to="/admin/departments" class="mobile-nav-link" @click="drawerVisible = false">职能管理</router-link>
             <router-link to="/admin/teams" class="mobile-nav-link" @click="drawerVisible = false">群组管理</router-link>
             <router-link to="/admin/job-titles" class="mobile-nav-link" @click="drawerVisible = false">职称管理</router-link>
@@ -285,12 +285,10 @@ a { color: inherit; text-decoration: none; }
   display: block;
   padding: 12px 14px;
   border-radius: 12px;
-  background: #f8fafc;
-  border: 1px solid var(--border);
   color: #1e293b;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
 }
+
 .mobile-docs {
   display: flex;
   flex-direction: column;
@@ -320,13 +318,26 @@ a { color: inherit; text-decoration: none; }
   max-width: 600px !important;
 }
 
+.admin-dialog{
+  /* 桌面端：固定比例 70% 宽度，最大 600px */
+  width: 70vw !important;
+  max-width: 600px !important;
+}
+
+
 @media (max-width: 768px) {
   /* 移动端：与页面宽度一致（减去边距） */
   :deep(.admin-dialog) {
     width: calc(100vw - 32px) !important; /* 左右各 16px 边距 */
     max-width: none !important;
-    margin: 0 auto; /* 居中显示 */
   }
+
+  .admin-dialog{
+    width: calc(100vw - 32px) !important; /* 左右各 16px 边距 */
+    max-width: none !important;
+  }
+
+
 }
 
 @media (max-width: 960px) {
