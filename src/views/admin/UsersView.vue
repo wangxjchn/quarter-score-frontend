@@ -8,39 +8,28 @@
       </div>
       <div class="hero-actions">
         <div class="hero-badge hero-badge--light">
-          <strong>{{ filteredUsers.length }}</strong>
+          <strong>{{ users.length }}</strong>
           <span>当前员工数</span>
         </div>
         <el-button type="primary" class="hero-button" @click="openAdd">新增员工</el-button>
       </div>
     </section>
 
-    <!-- 搜索过滤栏 -->
-    <div class="search-bar">
-      <el-input
-        v-model="searchText"
-        placeholder="搜索员工姓名或工号..."
-        clearable
-        prefix-icon="Search"
-        class="search-input"
-      />
-    </div>
-
     <div v-if="loading" class="loading-wrap">
       <el-icon class="is-loading" :size="32"><Loading /></el-icon>
     </div>
-    <el-empty v-else-if="filteredUsers.length === 0" :description="searchText ? '无匹配结果' : '暂无员工'" />
+    <el-empty v-else-if="users.length === 0" description="暂无员工" />
     <div v-else class="users-grid" @click="swipedId = null">
       <article
-        v-for="u in filteredUsers"
+        v-for="u in users"
         :key="u.id"
         class="user-card"
         :class="{ 'is-swiped': swipedId === u.id }"
-        @touchstart.passive="e => onTouchStart(e)"
+        @touchstart.passive="onTouchStart"
         @touchend.passive="e => onTouchEnd(e, u.id)"
       >
         <div class="user-card__main">
-          <div class="user-avatar avatar--{{ u.role }}" :style="getAvatarStyle(u.name)">{{ u.name.charAt(0) }}</div>
+          <div class="user-avatar" :class="`avatar--${u.role}`">{{ u.name.charAt(0) }}</div>
           <div class="user-info">
             <strong class="user-name">{{ u.name }}</strong>
             <span class="user-title">{{ u.title_name || ROLE_LABELS[u.role] }}</span>
@@ -57,7 +46,7 @@
       </article>
     </div>
 
-    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑员工' : '新增员工'" class="admin-dialog">
+    <el-dialog v-model="dlgVisible" :title="editingId ? '编辑员工' : '新增员工'" width="440px">
       <el-form :model="form" label-width="80px">
         <el-form-item label="工号">
           <el-input v-model="form.employee_id" placeholder="工号（唯一）" />
@@ -65,19 +54,24 @@
         <el-form-item label="姓名">
           <el-input v-model="form.name" placeholder="姓名" />
         </el-form-item>
-        <el-form-item label="职称" required>
-          <el-select v-model="form.title_id" placeholder="选择职称（必选）" style="width:100%">
-            <el-option v-for="jt in jobTitles" :key="jt.id" :label="jt.name" :value="jt.id" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="角色">
           <el-select v-model="form.role" style="width:100%">
             <el-option v-for="(label, val) in ROLE_LABELS"  :key="val" :label="label" :value="val" />
           </el-select>
         </el-form-item>
-        <el-form-item label="职能" required>
-          <el-select v-model="form.department_id" placeholder="选择职能（必选，仅一个）" style="width:100%">
-            <el-option v-for="dept in departments" :key="dept.id" :label="dept.name" :value="dept.id" />
+        <el-form-item label="职级">
+          <el-select v-model="form.level" style="width:100%">
+            <el-option v-for="(label, val) in LEVEL_LABELS" :key="val" :label="label" :value="val" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="小组（可多选）">
+          <el-select v-model="form.team_ids" multiple clearable collapse-tags collapse-tags-tooltip placeholder="可选择多个小组" style="width:100%">
+            <el-option v-for="t in teams" :key="t.id" :label="t.name" :value="t.id" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="职称">
+          <el-select v-model="form.title_id" clearable placeholder="选择职称（可空）" style="width:100%">
+            <el-option v-for="jt in jobTitles" :key="jt.id" :label="jt.name" :value="jt.id" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -90,8 +84,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, reactive, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Loading, Edit, Delete } from '@element-plus/icons-vue';
 import { api } from '../../api';
@@ -99,42 +92,17 @@ import { api } from '../../api';
 const ROLE_LABELS  = { admin: '管理员', leader: '组长', employee: '员工' };
 const LEVEL_LABELS = { junior: '助理',  mid: '中级',   senior: '高级'   };
 
-const route = useRoute(); // 在顶层调用
-
-function getAvatarStyle(name) {
-  const colors = [
-    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-    'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-    'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-  ];
-  const index = name.charCodeAt(0) % colors.length;
-  return { background: colors[index] };
-}
-
-const users        = ref([]);
-const teams        = ref([]);
-const jobTitles    = ref([]);
-const departments  = ref([]); // 新增：职能列表
-const searchText   = ref('');
-const loading      = ref(false);
-const saving       = ref(false);
-const dlgVisible   = ref(false);
-const editingId    = ref(null);
-const form         = reactive({ employee_id: '', name: '', role: 'employee', department_id: null, title_id: null });
+const users      = ref([]);
+const teams      = ref([]);
+const jobTitles  = ref([]);
+const loading    = ref(false);
+const saving     = ref(false);
+const dlgVisible = ref(false);
+const editingId  = ref(null);
+const form       = reactive({ employee_id: '', name: '', role: 'employee', level: 'mid', team_ids: [], title_id: null });
 
 let _tx0 = 0;
 const swipedId = ref(null);
-
-const filteredUsers = computed(() => {
-  if (!searchText.value.trim()) return users.value;
-  const keyword = searchText.value.toLowerCase();
-  return users.value.filter(user => 
-    user.name.toLowerCase().includes(keyword) ||
-    user.employee_id.toLowerCase().includes(keyword)
-  );
-});
 function onTouchStart(e) { _tx0 = e.touches[0].clientX; }
 function onTouchEnd(e, id) {
   const dx = _tx0 - e.changedTouches[0].clientX;
@@ -145,11 +113,10 @@ function onTouchEnd(e, id) {
 async function fetchAll() {
   loading.value = true;
   try {
-    [users.value, teams.value, jobTitles.value, departments.value] = await Promise.all([
+    [users.value, teams.value, jobTitles.value] = await Promise.all([
       api.get('/api/users'),
       api.get('/api/teams'),
       api.get('/api/job-titles'),
-      api.get('/api/departments'),
     ]);
   } catch { ElMessage.error('加载数据失败'); }
   finally { loading.value = false; }
@@ -157,7 +124,7 @@ async function fetchAll() {
 
 function openAdd() {
   editingId.value  = null;
-  Object.assign(form, { employee_id: '', name: '', role: 'employee', department_id: null, title_id: null });
+  Object.assign(form, { employee_id: '', name: '', role: 'employee', level: 'mid', team_ids: [], title_id: null });
   dlgVisible.value = true;
 }
 
@@ -167,7 +134,8 @@ function openEdit(row) {
     employee_id: row.employee_id,
     name:        row.name,
     role:        row.role,
-    department_id: row.department_id || null,
+    level:       row.level,
+    team_ids:    Array.isArray(row.team_ids) ? [...row.team_ids] : [],
     title_id:    row.title_id || null,
   });
   dlgVisible.value = true;
@@ -176,19 +144,6 @@ function openEdit(row) {
 async function handleSave() {
   if (!form.employee_id.trim()) { ElMessage.warning('工号不能为空'); return; }
   if (!form.name.trim())        { ElMessage.warning('姓名不能为空'); return; }
-  
-  // 验证职能（必选）
-  if (!form.department_id) {
-    ElMessage.warning('请选择职能（必选）');
-    return;
-  }
-  
-  // 验证职称（必选）
-  if (!form.title_id) {
-    ElMessage.warning('请选择职称（必选）');
-    return;
-  }
-  
   saving.value = true;
   try {
     if (editingId.value) {
@@ -218,22 +173,7 @@ async function handleDelete(row) {
   }
 }
 
-onMounted(async () => {
-  await fetchAll();
-  
-  // 检查 URL 参数，如果是从成员查看页面跳转过来的，自动打开编辑对话框
-  const userId = route.query.id;
-  const isEditMode = route.query.edit === 'true';
-  
-  if (userId && isEditMode) {
-    const userToEdit = users.value.find(u => u.id === Number(userId));
-    if (userToEdit) {
-      openEdit(userToEdit);
-      // 清除 URL 参数，避免刷新后重复打开
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }
-});
+onMounted(fetchAll);
 </script>
 
 <style scoped>
@@ -249,8 +189,6 @@ onMounted(async () => {
   background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(226, 244, 255, .9));
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
 }
-
-
 .section-chip {
   margin: 0 0 8px;
   color: #1d4ed8;
